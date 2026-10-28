@@ -8,6 +8,13 @@ interface SaglikYaniti {
   sistem: string
   kurum: string
   zaman: string
+  veritabani: {
+    bagli: boolean
+    kullaniciSayisi?: number
+    dersSayisi?: number
+    harfNotuSayisi?: number
+    uygulananMigrationlar?: number
+  }
 }
 
 /** Aşama 0 karşılama ekranı: kurumsal temayı ve backend bağlantısını doğrular. */
@@ -73,7 +80,25 @@ export default function Karsilama() {
             </span>
             <div className="font-semibold">Veritabanı</div>
           </div>
-          <p className="mt-4 text-sm text-selcuk-metin-soluk">PostgreSQL · Aşama 1'de bağlanacak</p>
+          {saglik.isLoading ? (
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin text-selcuk-mavi" /> Kontrol ediliyor…
+            </div>
+          ) : saglik.data?.veritabani.bagli ? (
+            <div className="mt-4 space-y-1 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" /> PostgreSQL bağlı
+              </div>
+              <div className="text-selcuk-metin-soluk">
+                {saglik.data.veritabani.kullaniciSayisi} kullanıcı · {saglik.data.veritabani.dersSayisi} ders ·{' '}
+                {saglik.data.veritabani.harfNotuSayisi} harf notu
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <XCircle className="h-4 w-4 text-red-600" /> Veritabanına bağlanılamadı
+            </div>
+          )}
         </div>
       </div>
 
