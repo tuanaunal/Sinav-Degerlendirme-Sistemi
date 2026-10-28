@@ -29,7 +29,7 @@ ornek-veriler/       Gerçekçi örnek optik ve sınıf listesi dosyaları (Aşa
 
 ## Geliştirme ortamında çalıştırma
 
-Gerekenler: .NET 8 SDK, Node.js 20+, PostgreSQL 16.
+Gerekenler: .NET 8 SDK, Node.js 22+, PostgreSQL 16.
 
 JWT imza anahtarı ve veritabanı şifresi repoda tutulmaz; .NET User Secrets ile bilgisayarda saklanır.
 Yeni bir bilgisayarda ilk çalıştırmadan önce bir kez:
@@ -50,6 +50,32 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Docker ile çalıştırma
+
+Gerekenler: Docker Desktop (veya Docker Engine + Compose eklentisi). PostgreSQL, API ve Nginx üç ayrı konteynerde çalışır;
+Nginx arayüzü sunar ve `/api` isteklerini API konteynerine iletir.
+
+```bash
+cp .env.example .env        # POSTGRES_PASSWORD ve JWT_ANAHTAR değerlerini değiştirin
+docker compose up -d --build
+```
+
+Uygulama: http://localhost:8080 — ilk açılışta veritabanı tabloları ve demo hesaplar otomatik oluşturulur.
+
+```bash
+docker compose logs -f api   # API günlükleri
+docker compose down          # durdur (veriler sds-veri biriminde kalır)
+docker compose down -v       # durdur ve veritabanını sil
+```
+
+## Sürekli entegrasyon
+
+Her push'ta GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) şunları çalıştırır:
+
+1. **Backend:** derleme ve xUnit testleri (örnek veri dosyalarıyla uçtan uca sınav akışları dahil)
+2. **Frontend:** ESLint ve üretim derlemesi
+3. **Docker:** imajlar derlenir, `docker compose` ile ayağa kaldırılır ve Nginx üzerinden API ile arayüzün yanıt verdiği doğrulanır
 
 ## Demo hesaplar
 

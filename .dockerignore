@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.git/
+.github/
+.claude/
+.vs/
+.vscode/
+.env
+.env.*
+docs/
+ornek-veriler/
+araclar/
+scripts/
+backend/Sds.Tests/
+**/*.md

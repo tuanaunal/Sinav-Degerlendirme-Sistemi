@@ -18,7 +18,7 @@ Her aşama bir öncekinin üzerine eklenir. Aşama tamamlanınca commit atılır
 | 11 | Sınav Başarı Analiz Raporu | ✅ |
 | 12 | Resmi Excel formu (Analiz, Liste, İÖK Kağıt) | ✅ |
 | 13 | Dönem değerlendirme ve harf notları | ✅ |
-| 14 | Dağıtım: Docker, Nginx, GitHub Actions | ⏳ |
+| 14 | Dağıtım: Docker, Nginx, GitHub Actions | ✅ |
 | — | *Final teslimi:* AI destekli analiz ve değerlendirme | 🔜 |
 
 ## Notlandırma esasları (Selçuk Üniversitesi)
