@@ -12,6 +12,9 @@ public static class SinavPuanlama
     /// </summary>
     public static async Task YenidenHesaplaAsync(SdsDbContext db, Sinav sinav)
     {
+        // Açık uçlu sınavın puanları optikten değil not dosyasından gelir; yeniden hesaplanacak bir şey yok
+        if (sinav.Format == SinavFormati.AcikUclu) return;
+
         var anahtar = await db.KitapcikSorulari.Where(k => k.SinavId == sinav.Id).ToListAsync();
         var sorular = await db.SinavSorulari.Where(s => s.SinavId == sinav.Id).ToListAsync();
         var sonuclar = await db.SinavSonuclari

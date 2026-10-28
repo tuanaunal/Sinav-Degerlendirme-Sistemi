@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, FileSpreadsheet, FileText, Info, Loader2, Pl
 import { Uyari } from '../../../components/form'
 import { api, hataMesaji } from '../../../lib/api'
 import { sinavAnahtari, type OptikOnizleme, type SinavBilgisi, type SinifListesiOnizleme } from '../../../lib/sinav'
-import type { SinavTuru } from '../../../lib/dersler'
+import type { SinavFormati, SinavTuru } from '../../../lib/dersler'
 
 const EN_FAZLA_LISTE = 2
 
@@ -21,23 +21,29 @@ interface SeciliListe {
 
 const boyut = (b: number) => (b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
 
-/** 1. adım: optik okuyucu dosyası (.txt) ve sınıf listesi (.xlsx) yüklenir; seçilir seçilmez okunup özetlenir. */
+/**
+ * 1. adım: optik okuyucu dosyası (.txt) ve sınıf listesi (.xlsx) yüklenir; seçilir seçilmez okunup özetlenir.
+ * Açık uçlu sınavda yalnızca sınıf listesi yüklenir.
+ */
 export default function Adim1DosyaYukleme({
   dersId,
   tur,
+  format,
   sinav,
   ileri,
 }: {
   dersId: number
   tur: SinavTuru
+  format: SinavFormati
   sinav: SinavBilgisi | null
   ileri: () => void
 }) {
+  const acikUclu = format === 'AcikUclu'
   const queryClient = useQueryClient()
   const [optik, setOptik] = useState<SeciliOptik | null>(null)
   const [listeler, setListeler] = useState<SeciliListe[]>([])
   // Daha önce yüklenmiş dosyalar (sayfaya geri dönüldüğünde)
-  const [oncekiKullan, setOncekiKullan] = useState(!!sinav?.optikDosyaAdi)
+  const [oncekiKullan, setOncekiKullan] = useState(!!sinav?.sinifListesiDosyaAdi)
   const [formatAcik, setFormatAcik] = useState(false)
   const optikInput = useRef<HTMLInputElement>(null)
   const listeInput = useRef<HTMLInputElement>(null)
@@ -77,8 +83,8 @@ export default function Adim1DosyaYukleme({
   const yukle = useMutation({
     mutationFn: async () => {
       const form = new FormData()
-      form.append('format', 'CoktanSecmeli')
-      form.append('optik', optik!.dosya)
+      form.append('format', format)
+      if (!acikUclu) form.append('optik', optik!.dosya)
       listeler.forEach((l) => form.append('sinifListeleri', l.dosya))
       return (await api.post<SinavBilgisi>(`/dersler/${dersId}/sinavlar/${tur.toLowerCase()}/dosyalar`, form)).data
     },
@@ -91,26 +97,35 @@ export default function Adim1DosyaYukleme({
   })
 
   const yeniDosyalarHazir =
-    !!optik?.onizleme && listeler.length > 0 && listeler.every((l) => l.onizleme) && !optik.hata
+    (acikUclu || (!!optik?.onizleme && !optik.hata)) && listeler.length > 0 && listeler.every((l) => l.onizleme)
   const devamEdilebilir = oncekiKullan || yeniDosyalarHazir
   const toplamOgrenci = listeler.reduce((t, l) => t + (l.onizleme?.ogrenciSayisi ?? 0), 0)
 
   return (
     <div className="kart p-5 sm:p-6">
-      <h2 className="text-lg font-bold text-selcuk-lacivert">Dosya Yükleme</h2>
+      <h2 className="text-lg font-bold text-selcuk-lacivert">{acikUclu ? 'Açık Uçlu Sınıf Listesi' : 'Dosya Yükleme'}</h2>
+      {acikUclu && (
+        <div className="mt-4">
+          <Uyari tur="uyari">
+            Lütfen <b>OBİS</b> sisteminden temin ettiğiniz orijinal sınıf listesi dosyasını yükleyin. Öğrencilerin soru bazlı puanlarını
+            3. adımda (Not Yükleme) bu listeden üretilen şablonla gireceksiniz.
+          </Uyari>
+        </div>
+      )}
 
       {oncekiKullan && sinav && (
         <div className="mt-4">
           <Uyari tur="basari">
-            Dosyalar daha önce yüklendi: <b>{sinav.optikDosyaAdi}</b> ({sinav.optikKagitSayisi} kağıt) ve{' '}
+            Dosyalar daha önce yüklendi:{' '}
+            {sinav.optikDosyaAdi && <><b>{sinav.optikDosyaAdi}</b> ({sinav.optikKagitSayisi} kağıt) ve{' '}</>}
             <b>{sinav.sinifListesiDosyaAdi}</b> ({sinav.sinifMevcudu} öğrenci). Değiştirmek için yeni dosya seçin.
           </Uyari>
         </div>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+      <div className={`mt-5 grid gap-5 ${acikUclu ? 'max-w-xl' : 'lg:grid-cols-2'}`}>
         {/* Optik dosyası */}
-        <div className="space-y-3">
+        <div className={`space-y-3 ${acikUclu ? 'hidden' : ''}`}>
           <div className={`rounded-xl border-2 border-dashed p-4 ${optik?.onizleme ? 'border-emerald-300 bg-emerald-50/60' : 'border-emerald-300/70 bg-emerald-50/30'}`}>
             <div className="flex items-center gap-2 font-semibold">
               <Upload className="h-4 w-4" /> Optik Okuyucu Dosyası (.txt)
@@ -206,6 +221,14 @@ export default function Adim1DosyaYukleme({
         </div>
       </div>
 
+      {!oncekiKullan && sinav && sinav.tamamlananAdim > 1 && (optik || listeler.length > 0) && (
+        <div className="mt-4">
+          <Uyari tur="uyari">
+            Yeni dosya yüklerseniz bu sınavın eşleştirmesi, puanları ve eklemeleri sıfırlanır{sinav.durum === 'Tamamlandi' ? '; sınav yeniden tamamlanana kadar analizde görünmez' : ''}.
+            Girdiğiniz {acikUclu ? 'soru ayarları' : 'cevap anahtarı'} korunur.
+          </Uyari>
+        </div>
+      )}
       {yukle.isError && <div className="mt-4"><Uyari tur="hata">{hataMesaji(yukle.error)}</Uyari></div>}
       {yukle.data && yeniUyarilar(yukle.data).length > 0 && (
         <div className="mt-4 space-y-2">

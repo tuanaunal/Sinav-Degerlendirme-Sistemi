@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUpDown, ChevronLeft, ChevronRight, FileSpreadsheet, Loader2, Pencil, Plus, Search, Upload, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowUpDown, ChevronLeft, ChevronRight, Download, FileSpreadsheet, Loader2, Pencil, Plus, Search, Trash2, Upload, X } from 'lucide-react'
 import Modal from '../../../components/Modal'
 import { Alan, Uyari } from '../../../components/form'
-import { api, hataMesaji } from '../../../lib/api'
+import { api, dosyaIndir, hataMesaji } from '../../../lib/api'
 import { puanYaz, sinavAnahtari, type SinavBilgisi } from '../../../lib/sinav'
 
 interface Ekleme {
@@ -58,6 +59,9 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
   const [duzenlenen, setDuzenlenen] = useState<NotSatiri | null>(null)
   const [pencere, setPencere] = useState<'proje' | 'bonus' | null>(null)
   const [mesaj, setMesaj] = useState<string | null>(null)
+  const [silOnay, setSilOnay] = useState(false)
+  const [indirHata, setIndirHata] = useState<string | null>(null)
+  const acikUclu = sinav.format === 'AcikUclu'
 
   const guncelle = (d: NotListesi) => queryClient.setQueryData(anahtar, d)
 
@@ -132,10 +136,13 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
               </th>
               <Baslik alan="ogrenciNo">Öğrenci No</Baslik>
               <Baslik alan="adSoyad">Ad Soyad</Baslik>
-              <th className="px-3 py-3 text-center font-semibold">D / Y / B</th>
+              <th className="px-3 py-3 text-center font-semibold" title={acikUclu ? 'Tam puanlı / kısmi puanlı / boş soru' : 'Doğru / yanlış / boş'}>
+                {acikUclu ? 'Tam / Kısmi / Boş' : 'D / Y / B'}
+              </th>
               <Baslik alan="hamPuan" sag>Ham Puan</Baslik>
               <th className="px-3 py-3 font-semibold">Eklemeler</th>
               <Baslik alan="duzeltilmisPuan" sag>Düzeltilmiş Puan</Baslik>
+              {acikUclu && <th className="px-3 py-3 text-center font-semibold">Harf Notu</th>}
             </tr>
           </thead>
           <tbody>
@@ -172,6 +179,11 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
                     </button>
                   ) : '—'}
                 </td>
+                {acikUclu && (
+                  <td className="px-3 py-2.5 text-center">
+                    {x.harfNotu ? <HarfRozeti harf={x.harfNotu} /> : '—'}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -189,6 +201,16 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
         <Ist etiket="En Düşük Puan" deger={n.ozet.enDusuk} />
       </div>
 
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button className="btn-ikincil" onClick={() => dosyaIndir(`/sinavlar/${sinav.id}/notlar/excel`, 'Sinav_Notlari.xlsx').catch((e) => setIndirHata(hataMesaji(e)))}>
+          <Download className="h-4 w-4" /> Excel'e Aktar
+        </button>
+        <button className="btn bg-red-600 text-white hover:bg-red-700" onClick={() => setSilOnay(true)}>
+          <Trash2 className="h-4 w-4" /> Sınavı Sil
+        </button>
+      </div>
+      {indirHata && <div className="mt-2"><Uyari tur="hata">{indirHata}</Uyari></div>}
+
       <div className="mt-6 flex justify-between">
         <button className="btn-ikincil" onClick={geri}><ChevronLeft className="h-4 w-4" /> Geri</button>
         <button className="btn-birincil" disabled={tamamla.isPending} onClick={() => tamamla.mutate()}>
@@ -196,6 +218,7 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
         </button>
       </div>
 
+      {silOnay && <SinavSilOnayi sinav={sinav} kapat={() => setSilOnay(false)} />}
       {duzenlenen && <ManuelPuan sinav={sinav} satir={duzenlenen} maks={n.maksimumPuan} kapat={() => setDuzenlenen(null)} tamam={guncelle} />}
       {pencere === 'bonus' && (
         <BonusPenceresi sinav={sinav} secili={[...secili]} kapat={() => setPencere(null)}
@@ -327,6 +350,43 @@ function ProjePenceresi({ sinav, kapat, tamam }: { sinav: SinavBilgisi; kapat: (
           <button className="btn-ikincil" onClick={kapat}>İptal</button>
           <button className="btn-birincil" disabled={!dosya || yukle.isPending} onClick={() => yukle.mutate()}>
             {yukle.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Notları Yükle
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function HarfRozeti({ harf }: { harf: string }) {
+  const stil = ['AA', 'BA', 'BB', 'CB', 'CC'].includes(harf)
+    ? 'bg-emerald-100 text-emerald-800'
+    : ['DC', 'DD'].includes(harf) ? 'bg-amber-100 text-amber-800' : 'bg-red-600 text-white'
+  return <span className={`inline-block w-9 rounded-full py-0.5 text-xs font-bold ${stil}`}>{harf}</span>
+}
+
+/** Sınavın tüm verilerini silmeden önce onay ister; silinince ders sayfasına döner. */
+function SinavSilOnayi({ sinav, kapat }: { sinav: SinavBilgisi; kapat: () => void }) {
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const sil = useMutation({
+    mutationFn: async () => api.delete(`/sinavlar/${sinav.id}`),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: sinavAnahtari(sinav.dersId, sinav.tur) })
+      queryClient.invalidateQueries({ queryKey: ['dersler'] })
+      navigate(`/dersler/${sinav.dersId}`)
+    },
+  })
+  return (
+    <Modal baslik="Sınavı Sil" aciklama="Bu işlem geri alınamaz." kapat={kapat}>
+      <div className="space-y-4">
+        <Uyari tur="hata">
+          Sınava ait yüklenen dosyalar, cevap anahtarı, tüm öğrenci puanları, eklemeler ve öğrenme çıktısı eşleştirmeleri kalıcı olarak silinecek.
+        </Uyari>
+        {sil.isError && <Uyari tur="hata">{hataMesaji(sil.error)}</Uyari>}
+        <div className="flex justify-end gap-2">
+          <button className="btn-ikincil" onClick={kapat}>Vazgeç</button>
+          <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={sil.isPending} onClick={() => sil.mutate()}>
+            {sil.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Evet, sınavı sil
           </button>
         </div>
       </div>

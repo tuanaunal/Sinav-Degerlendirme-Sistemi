@@ -13,6 +13,7 @@ import Adim2CevapAnahtari from './Adim2CevapAnahtari'
 import Adim3VeriEslestirme from './Adim3VeriEslestirme'
 import Adim4NotDuzenleme from './Adim4NotDuzenleme'
 import Adim5OgrenmeCiktilari from './Adim5OgrenmeCiktilari'
+import { AcikAdim2SoruSayisi, AcikAdim3NotYukleme } from './AcikUcluAdimlar'
 
 const ADIMLAR = {
   CoktanSecmeli: ['Dosya Yükleme', 'Cevap Anahtarı', 'Veri Eşleştirme', 'Not Düzenleme', 'Öğrenme Çıktıları'],
@@ -66,14 +67,16 @@ export default function SinavGirisi() {
       <AdimGostergesi adimlar={ADIMLAR[format]} aktif={adim} tamamlanan={tamamlanan} sec={setAdim} />
 
       <div className="mt-6">
-        {format === 'AcikUclu' ? (
-          <YapimAsamasinda metin="Açık uçlu sınav girişi Aşama 10'da eklenecek." />
-        ) : adim === 1 ? (
-          <Adim1DosyaYukleme dersId={dersId} tur={tur} sinav={sinav.data ?? null} ileri={() => setAdim(2)} />
+        {adim === 1 ? (
+          <Adim1DosyaYukleme dersId={dersId} tur={tur} format={format} sinav={sinav.data ?? null} ileri={() => setAdim(2)} />
         ) : adim === 2 && sinav.data ? (
-          <Adim2CevapAnahtari sinav={sinav.data} geri={() => setAdim(1)} ileri={() => setAdim(3)} />
+          format === 'AcikUclu'
+            ? <AcikAdim2SoruSayisi sinav={sinav.data} geri={() => setAdim(1)} ileri={() => setAdim(3)} />
+            : <Adim2CevapAnahtari sinav={sinav.data} geri={() => setAdim(1)} ileri={() => setAdim(3)} />
         ) : adim === 3 && sinav.data ? (
-          <Adim3VeriEslestirme sinav={sinav.data} geri={() => setAdim(2)} ileri={() => setAdim(4)} />
+          format === 'AcikUclu'
+            ? <AcikAdim3NotYukleme sinav={sinav.data} geri={() => setAdim(2)} ileri={() => setAdim(4)} />
+            : <Adim3VeriEslestirme sinav={sinav.data} geri={() => setAdim(2)} ileri={() => setAdim(4)} />
         ) : adim === 4 && sinav.data ? (
           <Adim4NotDuzenleme sinav={sinav.data} geri={() => setAdim(3)} ileri={() => setAdim(5)} />
         ) : adim === 5 && sinav.data ? (

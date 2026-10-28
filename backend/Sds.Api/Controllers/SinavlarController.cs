@@ -54,28 +54,30 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
     {
         if (!Enum.TryParse<SinavTuru>(tur, true, out var sinavTuru)) return NotFound(new { mesaj = "Geçersiz sınav türü." });
         if (!await DersErisimiVar(dersId)) return NotFound(new { mesaj = "Ders bulunamadı veya bu derse erişim yetkiniz yok." });
-        if (format != SinavFormati.CoktanSecmeli)
-            return BadRequest(new { mesaj = "Bu adım çoktan seçmeli sınavlar içindir." });
-        if (optik is null || optik.Length == 0) return BadRequest(new { mesaj = "Optik okuyucu dosyası (.txt) yüklenmedi." });
+        if (!Enum.IsDefined(format)) return BadRequest(new { mesaj = "Geçersiz sınav formatı." });
+        var coktanSecmeli = format == SinavFormati.CoktanSecmeli;
+        // Açık uçlu sınavda yalnızca sınıf listesi yüklenir
+        if (coktanSecmeli && (optik is null || optik.Length == 0)) return BadRequest(new { mesaj = "Optik okuyucu dosyası (.txt) yüklenmedi." });
         if (sinifListeleri is null || sinifListeleri.Count == 0) return BadRequest(new { mesaj = "Sınıf listesi (.xlsx) yüklenmedi." });
         if (sinifListeleri.Count > 2) return BadRequest(new { mesaj = "En fazla iki sınıf listesi yüklenebilir." });
 
         var sinav = await db.Sinavlar.FirstOrDefaultAsync(s => s.DersId == dersId && s.Tur == sinavTuru);
-        if (sinav is { Durum: SinavDurumu.Tamamlandi })
-            return Conflict(new { mesaj = "Bu sınav tamamlanmış. Dosyaları değiştirmek için \"Sınavı Düzenle\"yi kullanın." });
         if (sinav is not null && sinav.Format != format)
-            return Conflict(new { mesaj = "Bu sınav için farklı türde (açık uçlu) bir giriş başlatılmış." });
+            return Conflict(new { mesaj = $"Bu sınav için {(sinav.Format == SinavFormati.AcikUclu ? "açık uçlu" : "çoktan seçmeli")} bir giriş başlatılmış." });
 
         // Dosyaları oku
-        OptikOkumaSonucu optikSonuc;
+        OptikOkumaSonucu? optikSonuc = null;
         var ogrenciler = new Dictionary<string, SinifListesiOgrencisi>();
         var uyarilar = new List<string>();
         try
         {
-            using var ms = new MemoryStream();
-            await optik.CopyToAsync(ms);
-            optikSonuc = OptikOkuyucu.Oku(ms.ToArray(), await db.OptikFormAlanlari.AsNoTracking().ToListAsync());
-            uyarilar.AddRange(optikSonuc.Uyarilar);
+            if (coktanSecmeli)
+            {
+                using var ms = new MemoryStream();
+                await optik!.CopyToAsync(ms);
+                optikSonuc = OptikOkuyucu.Oku(ms.ToArray(), await db.OptikFormAlanlari.AsNoTracking().ToListAsync());
+                uyarilar.AddRange(optikSonuc.Uyarilar);
+            }
 
             foreach (var liste in sinifListeleri)
             {
@@ -93,8 +95,8 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
         }
 
         var beklenenTurKodu = sinavTuru switch { SinavTuru.Vize => '1', SinavTuru.Final => '2', _ => '3' };
-        var farkliTur = optikSonuc.Ogrenciler.Count(o => o.SinavTuru is { } t && t != beklenenTurKodu);
-        if (farkliTur > optikSonuc.Ogrenciler.Count() / 2)
+        var farkliTur = optikSonuc?.Ogrenciler.Count(o => o.SinavTuru is { } t && t != beklenenTurKodu) ?? 0;
+        if (optikSonuc is not null && farkliTur > optikSonuc.Ogrenciler.Count() / 2)
             uyarilar.Add($"Optik dosyasındaki kağıtların çoğunda sınav türü {beklenenTurKodu} değil; doğru dosyayı yüklediğinizden emin olun.");
 
         // Tüm değişiklikler tek SaveChanges ile atomik olarak kaydedilir
@@ -115,12 +117,14 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
                 .Include(c => c.SoruCevaplari).Include(c => c.Eklemeler).ToListAsync());
         }
 
-        sinav.OptikDosyaAdi = optik.FileName;
+        sinav.OptikDosyaAdi = optik?.FileName;
         sinav.SinifListesiDosyaAdi = string.Join("; ", sinifListeleri.Select(l => l.FileName));
+        // Yeni dosyalar eşleştirmeyi ve notları sıfırlar; tamamlanmış sınav yeniden taslağa döner
         sinav.TamamlananAdim = 1;
+        sinav.Durum = SinavDurumu.Taslak;
         sinav.GuncellemeTarihi = DateTime.UtcNow;
-        if (sinav.SoruSayisi == 0) sinav.SoruSayisi = optikSonuc.TahminiSoruSayisi;
-        if (sinav.Id == 0 || !await db.KitapcikSorulari.AnyAsync(k => k.SinavId == sinav.Id))
+        if (sinav.SoruSayisi == 0 && optikSonuc is not null) sinav.SoruSayisi = optikSonuc.TahminiSoruSayisi;
+        if (optikSonuc is not null && (sinav.Id == 0 || !await db.KitapcikSorulari.AnyAsync(k => k.SinavId == sinav.Id)))
         {
             var enBuyuk = optikSonuc.Ogrenciler.Where(o => o.Kitapcik is >= 'A' and <= 'E').Select(o => o.Kitapcik!.Value).DefaultIfEmpty('A').Max();
             sinav.KitapcikSayisi = enBuyuk - 'A' + 1;
@@ -141,7 +145,7 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
             sinav.Sonuclar.Add(new SinavSonucu { Ogrenci = ogr, Eslesme = EslesmeDurumu.Bekliyor });
         }
 
-        foreach (var s in optikSonuc.Satirlar)
+        foreach (var s in optikSonuc?.Satirlar ?? [])
         {
             sinav.OptikKayitlari.Add(new OptikKaydi
             {
@@ -248,6 +252,24 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
         }
 
         return await Bilgi(sinav, []);
+    }
+
+    /// <summary>"Sınavı Sil": sınavın tüm verilerini (dosyalar, anahtar, sonuçlar, eklemeler, çıktı eşleştirmesi) siler.</summary>
+    [HttpDelete("api/sinavlar/{id:int}")]
+    public async Task<IActionResult> Sil(int id)
+    {
+        var sinav = await ErisilebilirSinav(id);
+        if (sinav is null) return NotFound(new { mesaj = "Sınav bulunamadı." });
+
+        db.SinavSonuclari.RemoveRange(await db.SinavSonuclari.Where(s => s.SinavId == id)
+            .Include(s => s.SoruCevaplari).Include(s => s.Eklemeler).ToListAsync());
+        db.OptikKayitlari.RemoveRange(await db.OptikKayitlari.Where(s => s.SinavId == id).ToListAsync());
+        db.KitapcikSorulari.RemoveRange(await db.KitapcikSorulari.Where(s => s.SinavId == id).ToListAsync());
+        db.SinavSorulari.RemoveRange(await db.SinavSorulari.Where(s => s.SinavId == id).ToListAsync());
+        db.SoruOgrenmeCiktilari.RemoveRange(await db.SoruOgrenmeCiktilari.Where(s => s.SinavId == id).ToListAsync());
+        db.Sinavlar.Remove(sinav);
+        await db.SaveChangesAsync();
+        return Ok(new { mesaj = "Sınav silindi." });
     }
 
     public static string? CevapAnahtariniDogrula(CevapAnahtariKaydi k)

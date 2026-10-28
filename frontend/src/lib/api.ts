@@ -47,6 +47,21 @@ api.interceptors.response.use(
   },
 )
 
+/** Sunucunun ürettiği dosyayı (Excel vb.) indirir; dosya adı Content-Disposition başlığından alınır. */
+export async function dosyaIndir(yol: string, varsayilanAd: string) {
+  const yanit = await api.get<Blob>(yol, { responseType: 'blob' })
+  const baslik = yanit.headers['content-disposition'] as string | undefined
+  const ad = baslik?.match(/filename\*=UTF-8''([^;]+)/)?.[1] ?? baslik?.match(/filename="?([^";]+)"?/)?.[1]
+  const url = URL.createObjectURL(yanit.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = ad ? decodeURIComponent(ad) : varsayilanAd
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 /** Backend'in { mesaj } biçimindeki hata mesajını kullanıcıya gösterilecek metne çevirir. */
 export function hataMesaji(hata: unknown, varsayilan = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'): string {
   if (hata instanceof AxiosError) {

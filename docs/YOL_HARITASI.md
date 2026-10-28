@@ -14,7 +14,7 @@ Her aşama bir öncekinin üzerine eklenir. Aşama tamamlanınca commit atılır
 | 7 | Çoktan seçmeli sihirbaz: dosya yükleme, cevap anahtarı | ✅ |
 | 8 | Çoktan seçmeli sihirbaz: veri eşleştirme, not düzenleme | ✅ |
 | 9 | Çoktan seçmeli sihirbaz: kitapçık soru eşleştirme, öğrenme çıktıları | ✅ |
-| 10 | Açık uçlu sınav akışı | ⏳ |
+| 10 | Açık uçlu sınav akışı, Excel'e aktar, sınavı sil, düzenleme modu | ✅ |
 | 11 | Sınav Başarı Analiz Raporu | ⏳ |
 | 12 | Resmi Excel formu (Analiz, Liste, İÖK Kağıt) | ⏳ |
 | 13 | Dönem değerlendirme ve harf notları | ⏳ |

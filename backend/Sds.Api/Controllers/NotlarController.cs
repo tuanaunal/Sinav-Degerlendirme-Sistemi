@@ -146,6 +146,56 @@ public class NotlarController(SdsDbContext db) : ControllerBase
         return Ok(new { tamamlananAdim = sinav.TamamlananAdim });
     }
 
+    /// <summary>"Excel'e Aktar": not düzenleme tablosunun Excel çıktısı.</summary>
+    [HttpGet("excel")]
+    public async Task<IActionResult> Excel(int id)
+    {
+        var sinav = await db.ErisilebilirSinavAsync(id, User.KullaniciId());
+        if (sinav is null) return NotFound(new { mesaj = "Sınav bulunamadı." });
+        var ders = await db.Dersler.AsNoTracking().FirstAsync(d => d.Id == sinav.DersId);
+        var liste = await Liste(sinav);
+        var turAdi = sinav.Tur switch { SinavTuru.Vize => "Vize", SinavTuru.Final => "Final", _ => "Butunleme" };
+
+        using var wb = new ClosedXML.Excel.XLWorkbook();
+        var ws = wb.AddWorksheet("SinavSonuclari");
+        string[] basliklar = ["OGRENCINO", "ADSOYAD", "DURUM", "DOGRU", "YANLIS", "BOS", "HAMPUAN", "EKLEMELER", "SINAVNOTU", "HARFNOTU"];
+        for (var c = 0; c < basliklar.Length; c++) ws.Cell(1, c + 1).Value = basliklar[c];
+        ws.Row(1).Style.Font.SetBold();
+
+        var r = 2;
+        foreach (var x in liste.Satirlar)
+        {
+            ws.Cell(r, 1).Value = x.OgrenciNo;
+            ws.Cell(r, 1).Style.NumberFormat.Format = "@";
+            ws.Cell(r, 2).Value = x.AdSoyad;
+            ws.Cell(r, 3).Value = x.SinavaGirdi ? "Girdi" : "Girmedi";
+            if (x.SinavaGirdi)
+            {
+                ws.Cell(r, 4).Value = x.Dogru;
+                ws.Cell(r, 5).Value = x.Yanlis;
+                ws.Cell(r, 6).Value = x.Bos;
+                ws.Cell(r, 7).Value = x.ManuelPuan ?? x.HamPuan;
+                ws.Cell(r, 8).Value = x.Eklemeler.Sum(e => e.Puan);
+                ws.Cell(r, 9).Value = x.DuzeltilmisPuan;
+                ws.Cell(r, 10).Value = x.HarfNotu;
+            }
+            r++;
+        }
+        if (sinav.Format == SinavFormati.AcikUclu)
+        {
+            ws.Cell(1, 4).Value = "TAM PUANLI SORU";
+            ws.Cell(1, 5).Value = "KISMI PUANLI SORU";
+            ws.Cell(1, 6).Value = "BOS SORU";
+        }
+        ws.Columns().AdjustToContents();
+        ws.SheetView.FreezeRows(1);
+
+        var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        return File(ms.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"{ders.Kod}_{turAdi}_Sinav_Notlari.xlsx");
+    }
+
     private async Task<NotListesi> Liste(Sinav sinav)
     {
         var harfler = await db.HarfNotuAraliklari.AsNoTracking().OrderBy(h => h.Sira).ToListAsync();
