@@ -93,6 +93,14 @@ public class AcikUcluTestleri(TestUygulamasi uygulama) : IClassFixture<TestUygul
         Assert.True(son.IsSuccessStatusCode, await son.Content.ReadAsStringAsync());
         Assert.Equal(SinavDurumu.Tamamlandi, uygulama.Veritabani().Sinavlar.Single(s => s.Id == id).Durum);
 
+        // Açık uçlu analiz: soru başarısı = ortalama puan / soru puanı, şık analizi yok
+        var analiz = await elif.GetFromJsonAsync<SinavAnaliziYaniti>($"/api/sinavlar/{id}/analiz");
+        Assert.Equal(116, analiz!.HarfDagilimi.Sum(h => h.Sayi));
+        Assert.Equal(10, analiz.Sorular.Count);
+        Assert.All(analiz.Sorular, q => { Assert.InRange(q.BasariOrani, 0, 100); Assert.Empty(q.SikOranlari); });
+        // Eklemesiz sınavda soru ortalamalarının toplamı sınav ortalamasıdır (soru ortalamaları 2 basamağa yuvarlanır)
+        Assert.InRange(Math.Abs(analiz.Sorular.Sum(q => q.OrtalamaPuan) - analiz.Ozet.Ortalama!.Value), 0, 0.1m);
+
         // Düzenleme modunda yeni sınıf listesi yüklemek sınavı taslağa döndürür, soru ayarları korunur
         var yeniden = new MultipartFormDataContent { { new StringContent("AcikUclu"), "format" } };
         yeniden.Add(Dosya("OBIS_Sinif_Listesi_3304701_2026-2027_Guz.xlsx"), "sinifListeleri", "liste.xlsx");

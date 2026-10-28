@@ -226,6 +226,24 @@ public class DegerlendirmeTestleri(TestUygulamasi uygulama) : IClassFixture<Test
 
         var sinav = uygulama.Veritabani().Sinavlar.Single(x => x.Id == sinavId);
         Assert.Equal((SinavDurumu.Tamamlandi, 5), (sinav.Durum, sinav.TamamlananAdim));
+
+        // Analiz raporu: özet, dağılım, şık analizi (17. soruda anahtar hatası şüphesi), çıktı başarısı
+        var analiz = await elif.GetFromJsonAsync<SinavAnaliziYaniti>($"/api/sinavlar/{sinavId}/analiz");
+        Assert.Equal((120, 115), (analiz!.Ozet.Toplam, analiz.Ozet.Giren));
+        Assert.Equal(115, analiz.PuanDagilimi.Sum(d => d.Sayi));
+        Assert.Equal(115, analiz.HarfDagilimi.Sum(h => h.Sayi));
+        Assert.Equal(50, analiz.GecmeSiniri);
+        var s17 = analiz.Sorular.Single(q => q.SoruNo == 17);
+        Assert.Equal("D", s17.DogruCevap);
+        Assert.True(s17.SikOranlari["B"] > 60, $"S17 B %{s17.SikOranlari["B"]}");
+        Assert.Equal(100m, Math.Round(s17.SikOranlari.Values.Sum(), 0));
+        Assert.Equal(2, analiz.Ciktilar.Count);
+        Assert.All(analiz.Ciktilar, c => Assert.InRange(c.BasariOrani!.Value, 0, 100));
+
+        var ece = analiz.Ogrenciler.Single(o => o.AdSoyad == "ECE ŞEN");
+        var detay = await elif.GetFromJsonAsync<OgrenciAnalizi>($"/api/sinavlar/{sinavId}/analiz/ogrenci/{ece.SonucId}");
+        Assert.Equal(('B', 84m, 25), (detay!.Kitapcik!.Value, detay.HamPuan, detay.Sorular.Count));
+        Assert.Equal(21, detay.Sorular.Count(q => q.DogruMu == true));
     }
 
     [Fact]
