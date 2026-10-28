@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, BarChart3, CheckCircle2, Download, FileText, Loader2, Printer, Search, Target, TrendingUp, Users,
+  ArrowLeft, BarChart3, CheckCircle2, Download, FileText, Loader2, Printer, Save, Search, Sparkles, Target, TrendingUp, Users,
 } from 'lucide-react'
 import Sayfa from '../../components/layout/Sayfa'
 import { Uyari } from '../../components/form'
@@ -96,7 +96,7 @@ export default function SinavAnalizi() {
         </div>
         <div className="yazdirma-gizle flex gap-2">
           <button className="btn-ikincil" onClick={() => window.print()}><Printer className="h-4 w-4" /> Yazdır</button>
-          <button className="btn-birincil" onClick={() => dosyaIndir(`/sinavlar/${sinav.data!.id}/notlar/excel`, 'Sinav_Notlari.xlsx').catch((e) => setIndirHata(hataMesaji(e)))}>
+          <button className="btn-birincil" onClick={() => dosyaIndir(`/sinavlar/${sinav.data!.id}/resmi-form`, 'Sinav_Basarisi_Analiz_Formu.xlsx').catch((e) => setIndirHata(hataMesaji(e)))}>
             <Download className="h-4 w-4" /> Excel İndir
           </button>
         </div>
@@ -227,10 +227,57 @@ export default function SinavAnalizi() {
         )}
       </section>
 
+      <DegerlendirmeBolumu sinavId={sinav.data.id} />
+
       <div className="yazdirma-gizle mt-6 flex justify-center">
         <Link to={`/dersler/${dersId}`} className="btn-ikincil"><ArrowLeft className="h-4 w-4" /> Derse Geri Dön</Link>
       </div>
     </Sayfa>
+  )
+}
+
+interface Degerlendirme { kayitli: string | null; otomatik: string }
+
+/** "Sınavın Değerlendirmesi": resmi formun son bölümü. Boş bırakılırsa forma otomatik metin yazılır. */
+function DegerlendirmeBolumu({ sinavId }: { sinavId: number }) {
+  const istemci = useQueryClient()
+  const anahtar = ['sinav', sinavId, 'degerlendirme']
+  const veri = useQuery({ queryKey: anahtar, queryFn: async () => (await api.get<Degerlendirme>(`/sinavlar/${sinavId}/degerlendirme`)).data })
+  const [taslak, setTaslak] = useState<string | null>(null)
+  const metin = taslak ?? veri.data?.kayitli ?? ''
+  const kaydet = useMutation({
+    mutationFn: () => api.put(`/sinavlar/${sinavId}/degerlendirme`, { metin }),
+    onSuccess: () => { setTaslak(null); return istemci.invalidateQueries({ queryKey: anahtar }) },
+  })
+  const degisti = taslak !== null && taslak !== (veri.data?.kayitli ?? '')
+
+  return (
+    <section className="kart mt-5 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-bold">Sınavın Değerlendirmesi</h2>
+          <p className="mt-0.5 text-xs text-selcuk-metin-soluk">
+            Sınav Başarısı Analiz ve Değerlendirme Formu'nun son bölümüne yazılır. Boş bırakılırsa istatistiklerden üretilen metin kullanılır.
+          </p>
+        </div>
+        <div className="yazdirma-gizle flex gap-2">
+          <button className="btn-ikincil" disabled={!veri.data} onClick={() => setTaslak(veri.data!.otomatik)}>
+            <Sparkles className="h-4 w-4" /> Otomatik metni kullan
+          </button>
+          <button className="btn-mavi" disabled={!degisti || kaydet.isPending} onClick={() => kaydet.mutate()}>
+            {kaydet.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Kaydet
+          </button>
+        </div>
+      </div>
+      {veri.isError && <div className="mt-3"><Uyari tur="hata">{hataMesaji(veri.error)}</Uyari></div>}
+      {kaydet.isError && <div className="mt-3"><Uyari tur="hata">{hataMesaji(kaydet.error)}</Uyari></div>}
+      {kaydet.isSuccess && !degisti && <div className="mt-3"><Uyari tur="basari">Değerlendirme kaydedildi.</Uyari></div>}
+      <label htmlFor="degerlendirme" className="sr-only">Sınavın değerlendirmesi</label>
+      <textarea id="degerlendirme" rows={8} maxLength={4000} value={metin} onChange={(e) => setTaslak(e.target.value)}
+        placeholder={veri.data?.otomatik ?? 'Yükleniyor…'}
+        className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed focus:border-selcuk-mavi focus:outline-none focus:ring-2 focus:ring-selcuk-mavi/20" />
+      <p className="mt-1 text-right text-xs text-selcuk-metin-soluk">{metin.length} / 4000</p>
+    </section>
   )
 }
 

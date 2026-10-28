@@ -445,6 +445,10 @@ namespace Sds.Api.Data.Migrations
                     b.Property<bool>("BirdenFazlaDogruKabul")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("DegerlendirmeMetni")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<int>("DersId")
                         .HasColumnType("integer");
 

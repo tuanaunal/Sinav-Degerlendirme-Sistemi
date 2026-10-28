@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using ClosedXML.Excel;
 using Sds.Api.Controllers;
 using Sds.Api.Degerlendirme;
 using Sds.Api.Domain;
@@ -244,6 +245,41 @@ public class DegerlendirmeTestleri(TestUygulamasi uygulama) : IClassFixture<Test
         var detay = await elif.GetFromJsonAsync<OgrenciAnalizi>($"/api/sinavlar/{sinavId}/analiz/ogrenci/{ece.SonucId}");
         Assert.Equal(('B', 84m, 25), (detay!.Kitapcik!.Value, detay.HamPuan, detay.Sorular.Count));
         Assert.Equal(21, detay.Sorular.Count(q => q.DogruMu == true));
+
+        // Sınavın değerlendirmesi: kayıt yokken otomatik metin önerilir, S17'deki anahtar şüphesi metinde geçer
+        var degerlendirme = await elif.GetFromJsonAsync<DegerlendirmeMetni>($"/api/sinavlar/{sinavId}/degerlendirme");
+        Assert.Null(degerlendirme!.Kayitli);
+        Assert.Contains("S17 sorusunda", degerlendirme.Otomatik);
+        Assert.Contains("115 öğrenci katılmış", degerlendirme.Otomatik);
+
+        // Resmi form, otomatik metinle: üç sayfa, aralık sayıları giren öğrenci sayısını verir
+        var form = await elif.GetAsync($"/api/sinavlar/{sinavId}/resmi-form");
+        Assert.True(form.IsSuccessStatusCode, await form.Content.ReadAsStringAsync());
+        Assert.Equal("3301104_Vize_Sinav_Basarisi_Analiz_Formu.xlsx", form.Content.Headers.ContentDisposition!.FileNameStar);
+        using (var wb = new XLWorkbook(await form.Content.ReadAsStreamAsync()))
+        {
+            Assert.Equal(["Analiz", "Liste", "İÖK Kağıt"], wb.Worksheets.Select(w => w.Name));
+            var ws = wb.Worksheet("Analiz");
+            Assert.Equal("SELÇUK ÜNİVERSİTESİ", ws.Cell(2, 2).GetString());
+            Assert.Single(ws.Pictures);
+            var aralik = ws.CellsUsed(c => c.GetString() == "ARALIK").Single().Address.RowNumber;
+            Assert.Equal("88 - 100", ws.Cell(aralik + 1, 1).GetString());
+            Assert.Equal("0 - 15", ws.Cell(aralik + 9, 1).GetString());
+            Assert.Equal(115, Enumerable.Range(aralik + 1, 9).Sum(r => ws.Cell(r, 3).GetValue<int>()));
+            Assert.Contains("S17 sorusunda", ws.CellsUsed(c => c.GetString().StartsWith("Sınava kayıtlı")).Single().GetString());
+
+            var liste = wb.Worksheet("Liste");
+            Assert.Equal(("S1", "S25"), (liste.Cell(10, 5).GetString(), liste.Cell(10, 29).GetString()));
+            Assert.Equal(130, liste.LastRowUsed()!.RowNumber());
+            Assert.Equal(5, liste.Column(4).CellsUsed(c => c.GetString() == "GİRMEDİ").Count());
+            Assert.Equal(9, wb.Worksheet("İÖK Kağıt").Column(2).CellsUsed(c => c.GetString().Length == 9 && c.GetString().All(char.IsDigit)).Count());
+        }
+
+        // Öğretim üyesinin metni kaydedilir ve forma o yazılır
+        (await elif.PutAsJsonAsync($"/api/sinavlar/{sinavId}/degerlendirme", new DegerlendirmeKaydi("  Sınav genel olarak başarılı geçmiştir.  "))).EnsureSuccessStatusCode();
+        Assert.Equal("Sınav genel olarak başarılı geçmiştir.", (await elif.GetFromJsonAsync<DegerlendirmeMetni>($"/api/sinavlar/{sinavId}/degerlendirme"))!.Kayitli);
+        using (var wb = new XLWorkbook(await (await elif.GetAsync($"/api/sinavlar/{sinavId}/resmi-form")).Content.ReadAsStreamAsync()))
+            Assert.Single(wb.Worksheet("Analiz").CellsUsed(c => c.GetString() == "Sınav genel olarak başarılı geçmiştir."));
     }
 
     [Fact]

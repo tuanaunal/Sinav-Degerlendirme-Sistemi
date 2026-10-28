@@ -22,6 +22,8 @@ public class Sinav
     public bool BirdenFazlaDogruKabul { get; set; }
     /// <summary>B, C... kitapçıklarının A kitapçığına göre soru eşleştirmesi kaydedildi mi (5. adım)</summary>
     public bool KitapcikEslestirmeKaydedildi { get; set; }
+    /// <summary>Resmi formdaki "Sınavın Değerlendirmesi" metni (öğretim üyesi yazar / düzenler)</summary>
+    public string? DegerlendirmeMetni { get; set; }
     public string? OptikDosyaAdi { get; set; }
     public string? SinifListesiDosyaAdi { get; set; }
     public int OlusturanKullaniciId { get; set; }

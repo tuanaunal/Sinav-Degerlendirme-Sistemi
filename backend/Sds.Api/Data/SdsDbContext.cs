@@ -81,6 +81,7 @@ public class SdsDbContext(DbContextOptions<SdsDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.DersId, x.Tur }).IsUnique();
             e.HasOne(x => x.Ders).WithMany(d => d.Sinavlar).HasForeignKey(x => x.DersId);
             e.Property(x => x.OptikDosyaAdi).HasMaxLength(255);
+            e.Property(x => x.DegerlendirmeMetni).HasMaxLength(4000);
             e.Property(x => x.SinifListesiDosyaAdi).HasMaxLength(255);
         });
 
