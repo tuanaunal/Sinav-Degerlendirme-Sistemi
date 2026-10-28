@@ -17,7 +17,7 @@ public class SdsDbContext(DbContextOptions<SdsDbContext> options) : DbContext(op
     public DbSet<SinavSonucu> SinavSonuclari => Set<SinavSonucu>();
     public DbSet<SoruCevabi> SoruCevaplari => Set<SoruCevabi>();
     public DbSet<PuanEklemesi> PuanEklemeleri => Set<PuanEklemesi>();
-    public DbSet<EslesmeyenOptikKaydi> EslesmeyenOptikKayitlari => Set<EslesmeyenOptikKaydi>();
+    public DbSet<OptikKaydi> OptikKayitlari => Set<OptikKaydi>();
     public DbSet<SoruOgrenmeCiktisi> SoruOgrenmeCiktilari => Set<SoruOgrenmeCiktisi>();
     public DbSet<NotlandirmaAyari> NotlandirmaAyarlari => Set<NotlandirmaAyari>();
     public DbSet<HarfNotuAraligi> HarfNotuAraliklari => Set<HarfNotuAraligi>();
@@ -120,12 +120,13 @@ public class SdsDbContext(DbContextOptions<SdsDbContext> options) : DbContext(op
             e.HasOne(x => x.SinavSonucu).WithMany(s => s.Eklemeler).HasForeignKey(x => x.SinavSonucuId);
         });
 
-        b.Entity<EslesmeyenOptikKaydi>(e =>
+        b.Entity<OptikKaydi>(e =>
         {
+            e.HasIndex(x => new { x.SinavId, x.SatirNo }).IsUnique();
             e.Property(x => x.OgrenciNo).HasMaxLength(20);
             e.Property(x => x.AdSoyad).HasMaxLength(120);
             e.Property(x => x.Cevaplar).HasMaxLength(200);
-            e.HasOne(x => x.Sinav).WithMany(s => s.EslesmeyenOptikKayitlari).HasForeignKey(x => x.SinavId);
+            e.HasOne(x => x.Sinav).WithMany(s => s.OptikKayitlari).HasForeignKey(x => x.SinavId);
         });
 
         b.Entity<SoruOgrenmeCiktisi>(e =>

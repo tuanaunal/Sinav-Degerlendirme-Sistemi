@@ -44,6 +44,8 @@ public enum SinavDurumu
 /// <summary>Sınıf listesindeki öğrencinin optik kayıtla eşleşme durumu (3. adım).</summary>
 public enum EslesmeDurumu
 {
+    /// <summary>Dosyalar yüklendi, eşleştirme adımı henüz yapılmadı</summary>
+    Bekliyor = 0,
     /// <summary>Öğrenci numarasından otomatik eşleşti</summary>
     Otomatik = 1,
     /// <summary>Öğretim üyesi elle eşleştirdi</summary>
@@ -54,11 +56,12 @@ public enum EslesmeDurumu
     NotDosyasindan = 4,
 }
 
-/// <summary>Optik dosyada sınıf listesiyle eşleşmeyen kaydın durumu.</summary>
-public enum EslesmeyenOptikDurumu
+/// <summary>Optik kağıdın sınıf listesiyle eşleştirme durumu.</summary>
+public enum OptikKayitDurumu
 {
     Bekliyor = 1,
-    GozArdiEdildi = 2,
+    Eslesti = 2,
+    GozArdiEdildi = 3,
 }
 
 public enum PuanEklemeTuru

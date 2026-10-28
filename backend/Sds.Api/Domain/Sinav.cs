@@ -31,7 +31,7 @@ public class Sinav
     public List<SinavSorusu> Sorular { get; set; } = [];
     public List<KitapcikSorusu> KitapcikSorulari { get; set; } = [];
     public List<SinavSonucu> Sonuclar { get; set; } = [];
-    public List<EslesmeyenOptikKaydi> EslesmeyenOptikKayitlari { get; set; } = [];
+    public List<OptikKaydi> OptikKayitlari { get; set; } = [];
     public List<SoruOgrenmeCiktisi> SoruOgrenmeCiktilari { get; set; } = [];
 }
 
@@ -93,7 +93,7 @@ public class SinavSonucu
     public List<SoruCevabi> SoruCevaplari { get; set; } = [];
     public List<PuanEklemesi> Eklemeler { get; set; } = [];
 
-    public bool SinavaGirdi => Eslesme != EslesmeDurumu.SinavaGirmedi;
+    public bool SinavaGirdi => Eslesme is EslesmeDurumu.Otomatik or EslesmeDurumu.Manuel or EslesmeDurumu.NotDosyasindan;
 
     /// <summary>Düzeltilmiş puan = (manuel veya ham puan) + eklemeler, 0-100 aralığında</summary>
     public decimal DuzeltilmisPuan(decimal maksimum = 100) =>
@@ -124,8 +124,11 @@ public class PuanEklemesi
     public DateTime Tarih { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>Optik dosyada olup sınıf listesinde karşılığı bulunamayan kayıt (3. adımda elle çözülür).</summary>
-public class EslesmeyenOptikKaydi
+/// <summary>
+/// Yüklenen optik dosyanın bir satırı (öğrenci kağıdı veya cevap anahtarı kağıdı).
+/// 2. adımda "Optikten seç", 3. adımda sınıf listesiyle eşleştirme bu kayıtlar üzerinden yapılır.
+/// </summary>
+public class OptikKaydi
 {
     public int Id { get; set; }
     public int SinavId { get; set; }
@@ -134,8 +137,13 @@ public class EslesmeyenOptikKaydi
     public string OgrenciNo { get; set; } = "";
     public string AdSoyad { get; set; } = "";
     public char? Kitapcik { get; set; }
+    public char? SinavTuruKodu { get; set; }
+    /// <summary>Kitapçık sırasıyla işaretlenen şıklar; boş ' ', çoklu işaretleme '*'</summary>
     public string Cevaplar { get; set; } = "";
-    public EslesmeyenOptikDurumu Durum { get; set; } = EslesmeyenOptikDurumu.Bekliyor;
+    public bool CevapAnahtariMi { get; set; }
+    public OptikKayitDurumu Durum { get; set; } = OptikKayitDurumu.Bekliyor;
+    /// <summary>Eşleştiği sınıf listesi öğrencisinin sonucu</summary>
+    public int? SinavSonucuId { get; set; }
 }
 
 /// <summary>Öğrenme çıktısı - soru ilişkilendirmesi (5. adımdaki işaretleme matrisi).</summary>

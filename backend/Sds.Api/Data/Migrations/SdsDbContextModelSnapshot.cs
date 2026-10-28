@@ -80,48 +80,6 @@ namespace Sds.Api.Data.Migrations
                     b.ToTable("DersEgitmenleri");
                 });
 
-            modelBuilder.Entity("Sds.Api.Domain.EslesmeyenOptikKaydi", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdSoyad")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("Cevaplar")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("Durum")
-                        .HasColumnType("integer");
-
-                    b.Property<char?>("Kitapcik")
-                        .HasColumnType("character(1)");
-
-                    b.Property<string>("OgrenciNo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<int>("SatirNo")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SinavId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SinavId");
-
-                    b.ToTable("EslesmeyenOptikKayitlari");
-                });
-
             modelBuilder.Entity("Sds.Api.Domain.HarfNotuAraligi", b =>
                 {
                     b.Property<int>("Id")
@@ -358,6 +316,58 @@ namespace Sds.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("OptikFormAlanlari");
+                });
+
+            modelBuilder.Entity("Sds.Api.Domain.OptikKaydi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdSoyad")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<bool>("CevapAnahtariMi")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Cevaplar")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Durum")
+                        .HasColumnType("integer");
+
+                    b.Property<char?>("Kitapcik")
+                        .HasColumnType("character(1)");
+
+                    b.Property<string>("OgrenciNo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("SatirNo")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SinavId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SinavSonucuId")
+                        .HasColumnType("integer");
+
+                    b.Property<char?>("SinavTuruKodu")
+                        .HasColumnType("character(1)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SinavId", "SatirNo")
+                        .IsUnique();
+
+                    b.ToTable("OptikKayitlari");
                 });
 
             modelBuilder.Entity("Sds.Api.Domain.PuanEklemesi", b =>
@@ -651,17 +661,6 @@ namespace Sds.Api.Data.Migrations
                     b.Navigation("Kullanici");
                 });
 
-            modelBuilder.Entity("Sds.Api.Domain.EslesmeyenOptikKaydi", b =>
-                {
-                    b.HasOne("Sds.Api.Domain.Sinav", "Sinav")
-                        .WithMany("EslesmeyenOptikKayitlari")
-                        .HasForeignKey("SinavId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sinav");
-                });
-
             modelBuilder.Entity("Sds.Api.Domain.KitapcikSorusu", b =>
                 {
                     b.HasOne("Sds.Api.Domain.Sinav", "Sinav")
@@ -682,6 +681,17 @@ namespace Sds.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Ders");
+                });
+
+            modelBuilder.Entity("Sds.Api.Domain.OptikKaydi", b =>
+                {
+                    b.HasOne("Sds.Api.Domain.Sinav", "Sinav")
+                        .WithMany("OptikKayitlari")
+                        .HasForeignKey("SinavId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sinav");
                 });
 
             modelBuilder.Entity("Sds.Api.Domain.PuanEklemesi", b =>
@@ -800,9 +810,9 @@ namespace Sds.Api.Data.Migrations
 
             modelBuilder.Entity("Sds.Api.Domain.Sinav", b =>
                 {
-                    b.Navigation("EslesmeyenOptikKayitlari");
-
                     b.Navigation("KitapcikSorulari");
+
+                    b.Navigation("OptikKayitlari");
 
                     b.Navigation("Sonuclar");
 
