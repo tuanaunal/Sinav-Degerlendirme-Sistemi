@@ -7,6 +7,7 @@ import SifreDegistir from './pages/auth/SifreDegistir'
 import DersPanosu from './pages/ogretim-uyesi/DersPanosu'
 import DersDetay from './pages/ogretim-uyesi/DersDetay'
 import SinavGirisi from './pages/ogretim-uyesi/sinav-girisi/SinavGirisi'
+import SinavAnalizi from './pages/ogretim-uyesi/SinavAnalizi'
 import YonetimDuzeni from './pages/yonetim/YonetimDuzeni'
 import SifreSifirlama from './pages/yonetim/SifreSifirlama'
 import KullaniciIslemleri from './pages/yonetim/KullaniciIslemleri'
@@ -35,6 +36,8 @@ export default function App() {
         <Route path="/dersler/:dersId" element={<DersDetay />} />
         <Route path="/dersler/:dersId/sinav/:tur/yeni" element={<SinavGirisi />} />
         <Route path="/dersler/:dersId/sinav/:tur" element={<SinavGirisi />} />
+        <Route path="/dersler/:dersId/sinav/:tur/duzenle" element={<SinavGirisi />} />
+        <Route path="/dersler/:dersId/sinav/:tur/analiz" element={<SinavAnalizi />} />
       </Route>
       <Route element={<KorumaliRota yonetici />}>
         <Route path="/yonetim" element={<YonetimDuzeni />}>

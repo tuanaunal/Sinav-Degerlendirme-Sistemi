@@ -19,7 +19,7 @@ public class SinavGirisiTestleri(TestUygulamasi uygulama) : IClassFixture<TestUy
     }
 
     private Task<HttpClient> Elif() => uygulama.GirisYapmisIstemciAsync("elif.yildirim@selcuk.edu.tr", "elif.yildirim20417*");
-    private int DersId(string kod) => uygulama.Veritabani().Dersler.Single(d => d.Kod == kod).Id;
+    private int DersId(string kod) => uygulama.Veritabani().Dersler.Single(d => d.Kod == kod && d.AkademikYil == "2026-2027").Id;
 
     private static MultipartFormDataContent Form(string optik, params string[] listeler)
     {

@@ -19,6 +19,34 @@ public static class BaslangicVerisi
         await OptikFormAsync(db);
         await KullanicilarVeDerslerAsync(db);
         await db.SaveChangesAsync();
+        await GecmisDonemAsync(db);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// BMU dersinin geçen yılki kaydı ve öğrenme çıktıları: 5. adımdaki "Öğrenme Çıktılarını Getir"
+    /// bu dönemden çıktıları kopyalar. Var olan veritabanlarına da bir kez eklenir.
+    /// </summary>
+    private static async Task GecmisDonemAsync(SdsDbContext db)
+    {
+        const string kod = "3304701", yil = "2025-2026";
+        if (await db.Dersler.AnyAsync(d => d.Kod == kod && d.AkademikYil == yil)) return;
+        var elif = await db.Kullanicilar.FirstOrDefaultAsync(k => k.Eposta == "elif.yildirim@selcuk.edu.tr");
+        if (elif is null) return;
+
+        var ders = new Ders { Kod = kod, Ad = "Bilgisayar Mühendisliği Uygulamaları", AkademikYil = yil, Donem = Donem.Guz, Sinif = 4 };
+        ders.Egitmenler.Add(new DersEgitmen { Kullanici = elif });
+        string[] ciktilar =
+        [
+            "Mühendislik problemlerini tanımlar, analiz eder ve çözüm için uygun yöntem ve araçları seçer.",
+            "Yazılım geliştirme yaşam döngüsünün (gereksinim, tasarım, gerçekleştirme, test) aşamalarını bir projede uygular.",
+            "Veritabanı ve web teknolojilerini kullanarak çok katmanlı bir uygulama geliştirir.",
+            "Yazılım kalitesi, sürüm kontrolü ve test yöntemlerini uygulamalarında kullanır.",
+            "Takım içinde çalışır, proje yönetimi araçlarını kullanır ve teknik rapor hazırlar.",
+        ];
+        for (var i = 0; i < ciktilar.Length; i++)
+            ders.OgrenmeCiktilari.Add(new OgrenmeCiktisi { SiraNo = i + 1, Aciklama = ciktilar[i] });
+        db.Dersler.Add(ders);
     }
 
     /// <summary>Selçuk Üniversitesi Ön Lisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği, Madde 13.</summary>

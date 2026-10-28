@@ -164,10 +164,101 @@ public class DegerlendirmeTestleri(TestUygulamasi uygulama) : IClassFixture<Test
         Assert.True((await elif.PostAsync($"/api/sinavlar/{sinavId}/notlar/tamamla", null)).IsSuccessStatusCode);
     }
 
-    /// <summary>Örnek vize dosyalarını yükler ve optikteki anahtar satırlarıyla cevap anahtarını kaydeder.</summary>
-    private async Task<int> VizeyiHazirla(HttpClient istemci)
+    // ------------------------------------------------------------------ 5. adım
+
+    [Fact]
+    public async Task Adim5_KitapcikEslestirmeVeOgrenmeCiktilari_SinaviTamamlar()
     {
-        var dersId = uygulama.Veritabani().Dersler.Single(d => d.Kod == "3304701").Id;
+        var elif = await uygulama.GirisYapmisIstemciAsync("elif.yildirim@selcuk.edu.tr", "elif.yildirim20417*");
+        var sinavId = await VizeyiHazirla(elif, "3301104"); // Ayrık Matematik: diğer testlerden bağımsız
+        await EslestirmeyiTamamla(elif, sinavId);
+        (await elif.PostAsync($"/api/sinavlar/{sinavId}/notlar/tamamla", null)).EnsureSuccessStatusCode();
+
+        // Kitapçık eşleştirmesi kaydedilmeden öğrenme çıktısı ilişkilendirilemez
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await elif.PutAsJsonAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari/eslestirme", new CiktiEslestirmeKaydi([], true))).StatusCode);
+
+        // Doğru eşleştirme _dogrulama dosyasında: "B1  → A7"
+        var bdenAya = File.ReadAllLines(Path.Combine(Ornek, "_dogrulama", "vize_cevap_anahtari.txt"))
+            .Where(l => l.StartsWith('B') && l.Contains('→'))
+            .Select(l => int.Parse(l.Split('→')[1].Trim()[1..]))
+            .Select(x => (int?)x).ToList();
+        Assert.Equal(25, bdenAya.Count);
+
+        // Cevapları farklı iki soruyu yer değiştirmek kaydı engeller
+        var anahtar = await elif.GetFromJsonAsync<CevapAnahtari>($"/api/sinavlar/{sinavId}/cevap-anahtari");
+        var bAnahtar = anahtar!.Kitapciklar.Single(k => k.Kitapcik == 'B').Cevaplar;
+        var j = Enumerable.Range(1, 24).First(i => bAnahtar[i] != bAnahtar[0]);
+        var yanlis = bdenAya.ToList();
+        (yanlis[0], yanlis[j]) = (yanlis[j], yanlis[0]);
+        var red = await elif.PutAsJsonAsync($"/api/sinavlar/{sinavId}/kitapcik-eslestirme", new KitapcikEslestirmeKaydi([new('B', yanlis)]));
+        Assert.Equal(HttpStatusCode.BadRequest, red.StatusCode);
+        Assert.Contains("uyuşmuyor", await red.Content.ReadAsStringAsync());
+
+        var kayit = await elif.PutAsJsonAsync($"/api/sinavlar/{sinavId}/kitapcik-eslestirme", new KitapcikEslestirmeKaydi([new('B', bdenAya)]));
+        Assert.True(kayit.IsSuccessStatusCode, await kayit.Content.ReadAsStringAsync());
+
+        // A numarasına çevrilmiş soru cevapları: bilerek eklenen kolay / zor / şüpheli sorular
+        var db = uygulama.Veritabani();
+        var cevaplar = db.SoruCevaplari.Where(c => c.SinavSonucu.SinavId == sinavId).ToList();
+        double Oran(int soru) => cevaplar.Where(c => c.SoruNo == soru).Average(c => c.DogruMu == true ? 1.0 : 0.0);
+        Assert.True(Oran(3) > 0.9, $"S3 {Oran(3):P0}");
+        Assert.True(Oran(10) < 0.1, $"S10 {Oran(10):P0}");
+        Assert.True(Oran(17) < 0.1, $"S17 {Oran(17):P0}");
+        Assert.Equal(115 * 25, cevaplar.Count);
+
+        // Öğrenme çıktıları: geçen yılki dönemden getir, sorulara bağla, tamamla
+        var durum = await elif.GetFromJsonAsync<CiktiDurumu>($"/api/sinavlar/{sinavId}/ogrenme-ciktilari");
+        Assert.Equal(0, durum!.GetirilebilecekSayisi); // Ayrık Matematik'in geçmiş dönemi yok
+        durum = await (await elif.PostAsJsonAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari", new YeniCikti("Önerme mantığını ve ispat yöntemlerini kullanır.")))
+            .Content.ReadFromJsonAsync<CiktiDurumu>();
+        durum = await (await elif.PostAsJsonAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari", new YeniCikti("Kümeler, bağıntılar ve fonksiyonlarla ilgili problemleri çözer.")))
+            .Content.ReadFromJsonAsync<CiktiDurumu>();
+        Assert.Equal(2, durum!.Ciktilar.Count);
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await elif.PostAsJsonAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari", new YeniCikti("Önerme mantığını ve ispat yöntemlerini kullanır."))).StatusCode);
+
+        var bitti = await elif.PutAsJsonAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari/eslestirme", new CiktiEslestirmeKaydi(
+            [new(durum.Ciktilar[0].Id, [.. Enumerable.Range(1, 12)]), new(durum.Ciktilar[1].Id, [.. Enumerable.Range(13, 13)])], true));
+        Assert.True(bitti.IsSuccessStatusCode, await bitti.Content.ReadAsStringAsync());
+        var son = await bitti.Content.ReadFromJsonAsync<CiktiDurumu>();
+        Assert.Equal(12, son!.Ciktilar[0].Sorular.Count);
+
+        var sinav = uygulama.Veritabani().Sinavlar.Single(x => x.Id == sinavId);
+        Assert.Equal((SinavDurumu.Tamamlandi, 5), (sinav.Durum, sinav.TamamlananAdim));
+    }
+
+    [Fact]
+    public async Task OgrenmeCiktilari_GecenDonemdenGetirilir()
+    {
+        var elif = await uygulama.GirisYapmisIstemciAsync("elif.yildirim@selcuk.edu.tr", "elif.yildirim20417*");
+        var sinavId = await VizeyiHazirla(elif);
+
+        var durum = await elif.GetFromJsonAsync<CiktiDurumu>($"/api/sinavlar/{sinavId}/ogrenme-ciktilari");
+        Assert.Equal((5, "2025-2026 Güz"), (durum!.GetirilebilecekSayisi, durum.GetirilecekDonem));
+
+        durum = await (await elif.PostAsync($"/api/sinavlar/{sinavId}/ogrenme-ciktilari/getir", null)).Content.ReadFromJsonAsync<CiktiDurumu>();
+        Assert.Equal(5, durum!.Ciktilar.Count);
+        Assert.Equal(0, durum.GetirilebilecekSayisi);
+        Assert.Equal([1, 2, 3, 4, 5], durum.Ciktilar.Select(c => c.SiraNo));
+    }
+
+    private static async Task EslestirmeyiTamamla(HttpClient istemci, int sinavId)
+    {
+        var d = await istemci.GetFromJsonAsync<EslestirmeDurumu>($"/api/sinavlar/{sinavId}/eslestirme");
+        foreach (var k in d!.BekleyenKagitlar)
+            if (k.OneriSonucId is { } oneri) await istemci.PostAsJsonAsync($"/api/sinavlar/{sinavId}/eslestirme/eslestir", new ElleEslestir(k.Id, oneri));
+            else await istemci.PostAsync($"/api/sinavlar/{sinavId}/eslestirme/gozardi/{k.Id}", null);
+        d = await istemci.GetFromJsonAsync<EslestirmeDurumu>($"/api/sinavlar/{sinavId}/eslestirme");
+        foreach (var e in d!.Eslesenler.Where(e => e.Kitapcik is null))
+            await istemci.PostAsJsonAsync($"/api/sinavlar/{sinavId}/eslestirme/kitapcik", new KitapcikSec(e.SonucId, 'B'));
+        (await istemci.PostAsync($"/api/sinavlar/{sinavId}/eslestirme/tamamla", null)).EnsureSuccessStatusCode();
+    }
+
+    /// <summary>Örnek vize dosyalarını yükler ve optikteki anahtar satırlarıyla cevap anahtarını kaydeder.</summary>
+    private async Task<int> VizeyiHazirla(HttpClient istemci, string dersKodu = "3304701")
+    {
+        var dersId = uygulama.Veritabani().Dersler.Single(d => d.Kod == dersKodu && d.AkademikYil == "2026-2027").Id;
         var form = new MultipartFormDataContent { { new StringContent("CoktanSecmeli"), "format" } };
         foreach (var (alan, ad) in new[] { ("optik", "Optik_3304701_Vize.txt"), ("sinifListeleri", "OBIS_Sinif_Listesi_3304701_2026-2027_Guz.xlsx") })
         {

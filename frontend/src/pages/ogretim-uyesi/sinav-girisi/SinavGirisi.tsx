@@ -12,6 +12,7 @@ import Adim1DosyaYukleme from './Adim1DosyaYukleme'
 import Adim2CevapAnahtari from './Adim2CevapAnahtari'
 import Adim3VeriEslestirme from './Adim3VeriEslestirme'
 import Adim4NotDuzenleme from './Adim4NotDuzenleme'
+import Adim5OgrenmeCiktilari from './Adim5OgrenmeCiktilari'
 
 const ADIMLAR = {
   CoktanSecmeli: ['Dosya Yükleme', 'Cevap Anahtarı', 'Veri Eşleştirme', 'Not Düzenleme', 'Öğrenme Çıktıları'],
@@ -75,9 +76,11 @@ export default function SinavGirisi() {
           <Adim3VeriEslestirme sinav={sinav.data} geri={() => setAdim(2)} ileri={() => setAdim(4)} />
         ) : adim === 4 && sinav.data ? (
           <Adim4NotDuzenleme sinav={sinav.data} geri={() => setAdim(3)} ileri={() => setAdim(5)} />
+        ) : adim === 5 && sinav.data ? (
+          <Adim5OgrenmeCiktilari sinav={sinav.data} geri={() => setAdim(4)} />
         ) : (
           <YapimAsamasinda
-            metin="Öğrenme çıktıları adımı Aşama 9'da eklenecek."
+            metin="Önce önceki adımları tamamlayın."
             geri={() => setAdim(adim - 1)}
           />
         )}
