@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sds.Api.Auth;
 using Sds.Api.Data;
+using Sds.Api.Degerlendirme;
 using Sds.Api.Domain;
 using Sds.Api.Dosyalar;
 
@@ -238,6 +239,13 @@ public class SinavlarController(SdsDbContext db) : ControllerBase
         sinav.TamamlananAdim = Math.Max(sinav.TamamlananAdim, 2);
         sinav.GuncellemeTarihi = DateTime.UtcNow;
         await db.SaveChangesAsync();
+
+        // Eşleştirme yapılmışsa anahtar değişikliği puanlara hemen yansır
+        if (sinav.TamamlananAdim >= 3)
+        {
+            await SinavPuanlama.YenidenHesaplaAsync(db, sinav);
+            await db.SaveChangesAsync();
+        }
 
         return await Bilgi(sinav, []);
     }

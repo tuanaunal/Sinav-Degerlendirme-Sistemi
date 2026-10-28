@@ -10,6 +10,8 @@ import { sinavSorgusu } from '../../../lib/sinav'
 import AdimGostergesi from './AdimGostergesi'
 import Adim1DosyaYukleme from './Adim1DosyaYukleme'
 import Adim2CevapAnahtari from './Adim2CevapAnahtari'
+import Adim3VeriEslestirme from './Adim3VeriEslestirme'
+import Adim4NotDuzenleme from './Adim4NotDuzenleme'
 
 const ADIMLAR = {
   CoktanSecmeli: ['Dosya Yükleme', 'Cevap Anahtarı', 'Veri Eşleştirme', 'Not Düzenleme', 'Öğrenme Çıktıları'],
@@ -69,9 +71,13 @@ export default function SinavGirisi() {
           <Adim1DosyaYukleme dersId={dersId} tur={tur} sinav={sinav.data ?? null} ileri={() => setAdim(2)} />
         ) : adim === 2 && sinav.data ? (
           <Adim2CevapAnahtari sinav={sinav.data} geri={() => setAdim(1)} ileri={() => setAdim(3)} />
+        ) : adim === 3 && sinav.data ? (
+          <Adim3VeriEslestirme sinav={sinav.data} geri={() => setAdim(2)} ileri={() => setAdim(4)} />
+        ) : adim === 4 && sinav.data ? (
+          <Adim4NotDuzenleme sinav={sinav.data} geri={() => setAdim(3)} ileri={() => setAdim(5)} />
         ) : (
           <YapimAsamasinda
-            metin={adim <= 4 ? 'Veri eşleştirme ve not düzenleme adımları Aşama 8\'de eklenecek.' : 'Öğrenme çıktıları adımı Aşama 9\'da eklenecek.'}
+            metin="Öğrenme çıktıları adımı Aşama 9'da eklenecek."
             geri={() => setAdim(adim - 1)}
           />
         )}
