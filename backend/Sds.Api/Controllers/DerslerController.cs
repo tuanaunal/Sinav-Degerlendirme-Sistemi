@@ -117,6 +117,28 @@ public class DerslerController(SdsDbContext db) : ControllerBase
             ders.OgretimTuru.ToString(), ders.Sinif, Egitmenler(ders), []);
     }
 
+    /// <summary>Dersi tüm sınavları, sonuçları ve öğrenme çıktılarıyla birlikte siler (yalnızca dersin eğitmeni).</summary>
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Sil(int id)
+    {
+        var ders = await DerslerimSorgusu().FirstOrDefaultAsync(d => d.Id == id);
+        if (ders is null) return NotFound(new { mesaj = "Ders bulunamadı." });
+
+        var sinavIdleri = await db.Sinavlar.Where(s => s.DersId == id).Select(s => s.Id).ToListAsync();
+        db.SinavSonuclari.RemoveRange(await db.SinavSonuclari.Where(s => sinavIdleri.Contains(s.SinavId))
+            .Include(s => s.SoruCevaplari).Include(s => s.Eklemeler).ToListAsync());
+        db.OptikKayitlari.RemoveRange(await db.OptikKayitlari.Where(s => sinavIdleri.Contains(s.SinavId)).ToListAsync());
+        db.KitapcikSorulari.RemoveRange(await db.KitapcikSorulari.Where(s => sinavIdleri.Contains(s.SinavId)).ToListAsync());
+        db.SinavSorulari.RemoveRange(await db.SinavSorulari.Where(s => sinavIdleri.Contains(s.SinavId)).ToListAsync());
+        db.SoruOgrenmeCiktilari.RemoveRange(await db.SoruOgrenmeCiktilari.Where(s => sinavIdleri.Contains(s.SinavId)).ToListAsync());
+        db.Sinavlar.RemoveRange(await db.Sinavlar.Where(s => s.DersId == id).ToListAsync());
+        db.OgrenmeCiktilari.RemoveRange(await db.OgrenmeCiktilari.Where(c => c.DersId == id).ToListAsync());
+        db.DersEgitmenleri.RemoveRange(await db.DersEgitmenleri.Where(e => e.DersId == id).ToListAsync());
+        db.Dersler.Remove(ders);
+        await db.SaveChangesAsync();
+        return Ok(new { mesaj = "Ders silindi." });
+    }
+
     /// <summary>Dönem değerlendirme en az iki sınav (vize + final veya vize + bütünleme) tamamlanınca açılır.</summary>
     public static bool DonemDegerlendirmeAcikMi(IEnumerable<Sinav> sinavlar)
     {

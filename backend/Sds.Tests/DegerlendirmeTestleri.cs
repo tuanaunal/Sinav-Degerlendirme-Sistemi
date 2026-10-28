@@ -272,7 +272,16 @@ public class DegerlendirmeTestleri(TestUygulamasi uygulama) : IClassFixture<Test
             Assert.Equal(("S1", "S25"), (liste.Cell(10, 5).GetString(), liste.Cell(10, 29).GetString()));
             Assert.Equal(130, liste.LastRowUsed()!.RowNumber());
             Assert.Equal(5, liste.Column(4).CellsUsed(c => c.GetString() == "GİRMEDİ").Count());
-            Assert.Equal(9, wb.Worksheet("İÖK Kağıt").Column(2).CellsUsed(c => c.GetString().Length == 9 && c.GetString().All(char.IsDigit)).Count());
+            // İÖK: en yüksek, orta ve en düşük puanı alan öğrencilerin tamamı
+            var wi = wb.Worksheet("İÖK Kağıt");
+            var gruplar = wi.CellsUsed(c => c.GetString().StartsWith("DERSTE ")).Select(c => c.GetString()).ToList();
+            Assert.Equal(3, gruplar.Count);
+            Assert.Contains($"({(int)Math.Round(analiz.Ozet.EnYuksek!.Value, MidpointRounding.AwayFromZero)} Puan)", gruplar[0]);
+            Assert.True(wi.Column(2).CellsUsed(c => c.GetString().Length == 9 && c.GetString().All(char.IsDigit)).Count() >= 3);
+            Assert.Equal("TF-BM-SBA-02", wi.Cell(1, wi.CellsUsed(c => c.GetString() == "Doküman No").Single().Address.ColumnNumber + 1).GetString());
+
+            // Soru - öğrenme çıktısı matrisi: her ilişkilendirme bir "X"
+            Assert.Equal(analiz.Ciktilar.Sum(c => c.Sorular.Count), ws.CellsUsed(c => c.GetString() == "X").Count());
         }
 
         // Öğretim üyesinin metni kaydedilir ve forma o yazılır

@@ -242,6 +242,28 @@ export default function Adim3VeriEslestirme({ sinav, geri, ileri }: { sinav: Sin
         </div>
       )}
 
+      {d.eslesenler.some((e) => e.manuel) && (
+        <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50/60 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            Elle Yapılan Eşleştirmeler
+            <span className="rounded-full bg-selcuk-altin px-2 text-xs text-selcuk-lacivert">{d.eslesenler.filter((e) => e.manuel).length}</span>
+          </div>
+          <p className="text-xs text-selcuk-metin-soluk">Bu eşleştirmeler kaydedildi; yanlış yapılanı geri alabilirsiniz.</p>
+          <ul className="mt-3 space-y-2">
+            {d.eslesenler.filter((e) => e.manuel).map((e) => (
+              <li key={e.sonucId} className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm">
+                <div><div className="text-[11px] text-selcuk-metin-soluk">Optik</div><span className="font-mono text-xs">{e.optikNo || '—'}</span></div>
+                <span className="text-selcuk-metin-soluk">→</span>
+                <div><div className="text-[11px] text-selcuk-metin-soluk">Sınıf listesi</div><span className="font-mono text-xs">{e.ogrenciNo}</span> {e.adSoyad}</div>
+                <button className="ml-auto text-xs font-semibold text-selcuk-mavi hover:underline" disabled={islem.isPending} onClick={() => yap(`kaldir/${e.sonucId}`)}>
+                  <Undo2 className="mr-1 inline h-3.5 w-3.5" />Geri Al
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-5 rounded-lg border border-slate-200">
         <button className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-semibold" onClick={() => setEslesenlerAcik((a) => !a)}>
           Eşleşen kayıtlar ({d.eslesenler.length})

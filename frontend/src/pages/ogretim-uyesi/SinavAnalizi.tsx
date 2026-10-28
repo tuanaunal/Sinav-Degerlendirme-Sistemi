@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, BarChart3, CheckCircle2, Download, FileText, Loader2, Printer, Save, Search, Sparkles, Target, TrendingUp, Users,
+  ArrowLeft, BarChart3, CheckCircle2, Download, FileText, ListChecks, Loader2, Printer, Save, Search, Sparkles, Target, TrendingUp, Users,
 } from 'lucide-react'
 import Sayfa from '../../components/layout/Sayfa'
 import { Uyari } from '../../components/form'
@@ -84,6 +84,27 @@ export default function SinavAnalizi() {
   const g = a.genel
   const acikUclu = g.format === 'AcikUclu'
 
+  const puanDagilimi = (
+  <section className={`kart p-5 ${acikUclu ? '' : 'mt-5'}`}>
+      <h2 className="font-bold">Puan Dağılımı Grafiği</h2>
+      <p className="text-sm text-selcuk-metin-soluk">Öğrenci puan aralıklarına göre frekans dağılımı (100 üzerinden)</p>
+      <div className="mt-4">
+        <CubukGrafik baslik="Puan dağılımı" veri={a.puanDagilimi.map((d) => ({ etiket: d.etiket, deger: d.sayi, aciklama: `Öğrenci sayısı: ${d.sayi}` }))} />
+      </div>
+      <div className="mt-5 border-t border-slate-100 pt-4">
+        <div className="text-xs font-semibold uppercase tracking-wide text-selcuk-metin-soluk">{acikUclu ? 'Sınav Detayları' : 'Sınav İstatistik Detayları'}</div>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[['Min', a.ozet.enDusuk], ['Maks', a.ozet.enYuksek], ['Medyan', a.ozet.medyan], ['Std Sapma', a.ozet.standartSapma]].map(([k, v]) => (
+            <div key={k as string} className="rounded-lg border border-slate-200 bg-selcuk-zemin/60 py-2 text-center">
+              <div className="text-xs font-semibold text-selcuk-metin-soluk">{k}</div>
+              <div className="font-bold">{sayi(v as number | null)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+
   return (
     <Sayfa breadcrumb={breadcrumb}>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -104,15 +125,27 @@ export default function SinavAnalizi() {
       {indirHata && <div className="mt-3"><Uyari tur="hata">{indirHata}</Uyari></div>}
 
       {/* İstatistik kartları */}
-      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className={`mt-5 grid grid-cols-2 gap-3 ${acikUclu ? 'lg:grid-cols-4' : 'md:grid-cols-3 xl:grid-cols-6'}`}>
         <Kart etiket="Toplam Öğrenci" deger={`${a.ozet.toplam}`} alt={`${a.ozet.giren} giren`} Ikon={Users} renk="bg-blue-50 text-selcuk-mavi" />
         <Kart etiket="Ortalama Puan" deger={sayi(a.ozet.ortalama)} Ikon={TrendingUp} renk="bg-indigo-50 text-indigo-600" />
         <Kart etiket="Başarı Oranı" deger={a.basariOrani === null ? '—' : `%${puanYaz(a.basariOrani)}`} alt={`${a.gecmeSiniri} ve üzeri`} Ikon={CheckCircle2} renk="bg-emerald-50 text-emerald-600" />
-        <Kart etiket="Medyan" deger={sayi(a.ozet.medyan)} Ikon={Target} renk="bg-amber-50 text-amber-600" />
-        <Kart etiket="Standart Sapma" deger={sayi(a.ozet.standartSapma)} Ikon={FileText} renk="bg-purple-50 text-purple-600" />
-        <Kart etiket="Min / Maks" deger={`${sayi(a.ozet.enDusuk)} / ${sayi(a.ozet.enYuksek)}`} Ikon={BarChart3} renk="bg-rose-50 text-rose-600" />
+        {acikUclu ? (
+          <Kart etiket="Soru Sayısı" deger={`${g.soruSayisi}`} alt={`${puanYaz(g.maksimumPuan)} puan üzerinden`} Ikon={ListChecks} renk="bg-amber-50 text-amber-600" />
+        ) : (
+          <>
+            <Kart etiket="Medyan" deger={sayi(a.ozet.medyan)} Ikon={Target} renk="bg-amber-50 text-amber-600" />
+            <Kart etiket="Standart Sapma" deger={sayi(a.ozet.standartSapma)} Ikon={FileText} renk="bg-purple-50 text-purple-600" />
+            <Kart etiket="Min / Maks" deger={`${sayi(a.ozet.enDusuk)} / ${sayi(a.ozet.enYuksek)}`} Ikon={BarChart3} renk="bg-rose-50 text-rose-600" />
+          </>
+        )}
       </div>
 
+      {acikUclu ? (
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <OgrenciIncelemesi sinavId={sinav.data.id} ogrenciler={a.ogrenciler} acikUclu />
+          {puanDagilimi}
+        </div>
+      ) : (
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(260px,1fr)_2fr]">
         <section className="kart">
           <h2 className="border-b border-slate-100 px-5 py-3.5 font-bold">Genel Bilgiler</h2>
@@ -131,28 +164,13 @@ export default function SinavAnalizi() {
             ))}
           </dl>
         </section>
-        <OgrenciIncelemesi sinavId={sinav.data.id} ogrenciler={a.ogrenciler} acikUclu={acikUclu} />
+        <OgrenciIncelemesi sinavId={sinav.data.id} ogrenciler={a.ogrenciler} acikUclu={false} />
       </div>
+      )}
 
-      <section className="kart mt-5 p-5">
-        <h2 className="font-bold">Puan Dağılımı Grafiği</h2>
-        <p className="text-sm text-selcuk-metin-soluk">Öğrenci puan aralıklarına göre frekans dağılımı (100 üzerinden)</p>
-        <div className="mt-4">
-          <CubukGrafik baslik="Puan dağılımı" veri={a.puanDagilimi.map((d) => ({ etiket: d.etiket, deger: d.sayi, aciklama: `Öğrenci sayısı: ${d.sayi}` }))} />
-        </div>
-        <div className="mt-5 border-t border-slate-100 pt-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-selcuk-metin-soluk">Sınav İstatistik Detayları</div>
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[['Min', a.ozet.enDusuk], ['Maks', a.ozet.enYuksek], ['Medyan', a.ozet.medyan], ['Std Sapma', a.ozet.standartSapma]].map(([k, v]) => (
-              <div key={k as string} className="rounded-lg border border-slate-200 bg-selcuk-zemin/60 py-2 text-center">
-                <div className="text-xs font-semibold text-selcuk-metin-soluk">{k}</div>
-                <div className="font-bold">{sayi(v as number | null)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {!acikUclu && puanDagilimi}
 
+      {!acikUclu && (
       <section className="kart mt-5 p-5">
         <h2 className="font-bold">Soru Bazlı Başarı Analizi</h2>
         <p className="text-sm text-selcuk-metin-soluk">
@@ -174,6 +192,7 @@ export default function SinavAnalizi() {
           <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-red-600" />%40'ın altı</span>
         </p>
       </section>
+      )}
 
       {!acikUclu && (
         <section className="kart mt-5 p-5">

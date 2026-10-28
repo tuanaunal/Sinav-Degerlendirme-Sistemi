@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, CalendarRange, ChevronRight, Loader2, Plus, Users } from 'lucide-react'
+import { BookOpen, CalendarRange, ChevronRight, Loader2, Plus, Trash2, Users } from 'lucide-react'
 import Sayfa from '../../components/layout/Sayfa'
 import Modal from '../../components/Modal'
 import { Alan, Uyari } from '../../components/form'
@@ -96,7 +96,9 @@ export default function DersPanosu() {
 
 function DersKartiBileseni({ ders }: { ders: DersKarti }) {
   const durumu = (t: SinavTuru) => ders.sinavlar.find((s) => s.tur === t)?.durum
+  const [silinecek, setSilinecek] = useState(false)
   return (
+    <div className="relative">
     <Link
       to={`/dersler/${ders.id}`}
       className="kart group flex min-h-[176px] flex-col p-5 transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-selcuk-mavi/30"
@@ -105,7 +107,7 @@ function DersKartiBileseni({ ders }: { ders: DersKarti }) {
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-selcuk-mavi-acik text-selcuk-mavi">
           <BookOpen className="h-5 w-5" />
         </span>
-        <span className="rounded-md bg-selcuk-zemin px-2 py-1 font-mono text-xs font-semibold text-selcuk-metin-soluk">
+        <span className="mr-8 rounded-md bg-selcuk-zemin px-2 py-1 font-mono text-xs font-semibold text-selcuk-metin-soluk">
           {ders.kod}
         </span>
       </div>
@@ -138,6 +140,34 @@ function DersKartiBileseni({ ders }: { ders: DersKarti }) {
         <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
+      <button className="absolute right-3 top-4 rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
+        onClick={() => setSilinecek(true)} aria-label={`${ders.ad} dersini sil`} title="Dersi sil">
+        <Trash2 className="h-4 w-4" />
+      </button>
+      {silinecek && <DersSilmeOnayi ders={ders} kapat={() => setSilinecek(false)} />}
+    </div>
+  )
+}
+
+function DersSilmeOnayi({ ders, kapat }: { ders: DersKarti; kapat: () => void }) {
+  const istemci = useQueryClient()
+  const sil = useMutation({
+    mutationFn: () => api.delete(`/dersler/${ders.id}`),
+    onSuccess: async () => { await istemci.invalidateQueries({ queryKey: ['dersler'] }); kapat() },
+  })
+  return (
+    <Modal baslik="Dersi Sil" aciklama={`${ders.kod} — ${ders.ad} (${ders.akademikYil})`} kapat={kapat}>
+      <Uyari tur="uyari">
+        Derse ait tüm sınavlar, yüklenen dosyalar, öğrenci puanları ve öğrenme çıktıları kalıcı olarak silinecek. Bu işlem geri alınamaz.
+      </Uyari>
+      {sil.isError && <div className="mt-3"><Uyari tur="hata">{hataMesaji(sil.error)}</Uyari></div>}
+      <div className="mt-5 flex justify-end gap-2">
+        <button className="btn-ikincil" onClick={kapat}>İptal</button>
+        <button className="btn bg-red-600 text-white hover:bg-red-700" disabled={sil.isPending} onClick={() => sil.mutate()}>
+          {sil.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Dersi Sil
+        </button>
+      </div>
+    </Modal>
   )
 }
 

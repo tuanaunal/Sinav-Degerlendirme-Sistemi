@@ -7,17 +7,23 @@ export interface Cubuk {
   aciklama?: string
   /** Varsayılan kurumsal mavi yerine (ör. harf notunda durum rengi) */
   renk?: string
+  /** Vurgulanmayan çubuk (ör. ortalamanın dışındaki aralıklar) soluk çizilir */
+  soluk?: boolean
 }
 
 /**
  * Tek serili dikey çubuk grafik (puan dağılımı, harf dağılımı). Izgara çizgileri soluk, çubuk uçları yuvarlak;
  * her çubuğun üstünde değeri yazar, üzerine gelince açıklama balonu gösterir.
  */
-export function CubukGrafik({ veri, yukseklik = 220, birim = 'öğrenci', baslik }: {
+export function CubukGrafik({ veri, yukseklik = 220, birim = 'öğrenci', baslik, secili: sec, onSec }: {
   veri: Cubuk[]
   yukseklik?: number
   birim?: string
   baslik: string
+  /** Seçili çubuk (filtre); diğerleri soluk gösterilir */
+  secili?: string | null
+  /** Verilirse çubuklar tıklanabilir olur */
+  onSec?: (etiket: string) => void
 }) {
   const [secili, setSecili] = useState<number | null>(null)
   const maks = Math.max(1, ...veri.map((v) => v.deger))
@@ -39,12 +45,14 @@ export function CubukGrafik({ veri, yukseklik = 220, birim = 'öğrenci', baslik
           ))}
           <div className="absolute inset-0 flex items-end gap-[2px] px-1">
             {veri.map((v, i) => (
-              <div key={v.etiket} className="relative flex h-full flex-1 flex-col justify-end" onMouseEnter={() => setSecili(i)}
-                onFocus={() => setSecili(i)} tabIndex={0} aria-label={`${v.etiket}: ${v.deger} ${birim}`}>
+              <div key={v.etiket} className={`relative flex h-full flex-1 flex-col justify-end ${onSec ? 'cursor-pointer' : ''}`} onMouseEnter={() => setSecili(i)}
+                onFocus={() => setSecili(i)} tabIndex={0} aria-label={`${v.etiket}: ${v.deger} ${birim}`} aria-pressed={onSec ? sec === v.etiket : undefined}
+                role={onSec ? 'button' : undefined} onClick={onSec && (() => onSec(v.etiket))}
+                onKeyDown={onSec && ((e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSec(v.etiket) } })}>
                 {v.deger > 0 && (
                   <span className="mb-0.5 text-center text-[11px] font-semibold text-selcuk-metin">{v.deger}</span>
                 )}
-                <div className={`mx-auto w-full max-w-[56px] rounded-t transition-opacity ${secili !== null && secili !== i ? 'opacity-50' : ''}`}
+                <div className={`mx-auto w-full max-w-[56px] rounded-t transition-opacity ${(secili !== null && secili !== i) || v.soluk || (sec && sec !== v.etiket) ? 'opacity-35' : ''}`}
                   style={{ height: `${(v.deger / ust) * 100}%`, minHeight: v.deger > 0 ? 3 : 0, background: v.renk ?? '#1C458B' }} />
                 {secili === i && (
                   <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded-lg bg-selcuk-lacivert px-2.5 py-1.5 text-xs text-white shadow-lg">
@@ -65,10 +73,10 @@ export function CubukGrafik({ veri, yukseklik = 220, birim = 'öğrenci', baslik
 }
 
 /** Yüzde halkası: %70 ve üzeri yeşil, %40-70 sarı, altı kırmızı. Değer her zaman ortada yazılıdır. */
-export function YuzdeHalkasi({ yuzde, boyut = 64 }: { yuzde: number; boyut?: number }) {
+export function YuzdeHalkasi({ yuzde, boyut = 64, renk: sabitRenk }: { yuzde: number; boyut?: number; renk?: string }) {
   const r = (boyut - 8) / 2
   const cevre = 2 * Math.PI * r
-  const renk = yuzde >= 70 ? '#059669' : yuzde >= 40 ? '#D97706' : '#DC2626'
+  const renk = sabitRenk ?? (yuzde >= 70 ? '#059669' : yuzde >= 40 ? '#D97706' : '#DC2626')
   return (
     <svg width={boyut} height={boyut} viewBox={`0 0 ${boyut} ${boyut}`} role="img" aria-label={`%${yuzde.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`}>
       <circle cx={boyut / 2} cy={boyut / 2} r={r} fill="none" stroke="#E2E8F0" strokeWidth={6} />

@@ -116,4 +116,21 @@ public class DonemTestleri(TestUygulamasi uygulama) : IClassFixture<TestUygulama
         var mehmet = await uygulama.GirisYapmisIstemciAsync("mehmet.kaya@selcuk.edu.tr", "mehmet.kaya20533*");
         Assert.Equal(HttpStatusCode.NotFound, (await mehmet.GetAsync($"/api/dersler/{acikDers}/donem")).StatusCode);
     }
+
+    [Fact]
+    public async Task DersSilme_TumSinavVerileriniKaldirir_BaskasiSilemez()
+    {
+        var (elif, dersId) = await DersHazirla("9990005");
+        var mehmet = await uygulama.GirisYapmisIstemciAsync("mehmet.kaya@selcuk.edu.tr", "mehmet.kaya20533*");
+        Assert.Equal(HttpStatusCode.NotFound, (await mehmet.DeleteAsync($"/api/dersler/{dersId}")).StatusCode);
+
+        var sinavIdleri = uygulama.Veritabani().Sinavlar.Where(s => s.DersId == dersId).Select(s => s.Id).ToList();
+        Assert.Equal(3, sinavIdleri.Count);
+        Assert.True((await elif.DeleteAsync($"/api/dersler/{dersId}")).IsSuccessStatusCode);
+        var db = uygulama.Veritabani();
+        Assert.False(db.Dersler.Any(d => d.Id == dersId));
+        Assert.False(db.SinavSonuclari.Any(s => sinavIdleri.Contains(s.SinavId)));
+        Assert.False(db.OgrenmeCiktilari.Any(c => c.DersId == dersId));
+        Assert.Equal(HttpStatusCode.NotFound, (await elif.GetAsync($"/api/dersler/{dersId}")).StatusCode);
+    }
 }

@@ -11,7 +11,7 @@ namespace Sds.Api.Degerlendirme;
 /// <summary>
 /// AMÜDEK / MÜDEK süreçleri için "Sınav Başarısı Analiz ve Değerlendirme Formu" (Excel).
 /// Sayfalar: Analiz (ders ve sınav bilgileri, puan aralıkları, öğrenme çıktıları, değerlendirme),
-/// Liste (öğrenci bazlı soru puanları) ve İÖK Kağıt (arşivlenecek iyi / orta / kötü örnek kağıtlar).
+/// Liste (öğrenci bazlı soru puanları) ve İÖK Kağıt (en yüksek, orta ve en düşük puanlı, arşivlenecek örnek kağıtlar).
 /// </summary>
 public static class ResmiFormUretici
 {
@@ -19,6 +19,10 @@ public static class ResmiFormUretici
     internal static readonly XLColor Lacivert = XLColor.FromHtml("#0D2D5E");
     internal static readonly XLColor BaslikZemin = XLColor.FromHtml("#D9E1F2");
     internal static readonly XLColor AltinZemin = XLColor.FromHtml("#FFF2CC");
+
+    // Videodaki bölüm formlarından okunan doküman numaraları
+    private const string AnalizDokumanNo = "TF-BM-SBA-01";
+    private const string KagitDokumanNo = "TF-BM-SBA-02";
 
     public static async Task<(byte[] Icerik, string DosyaAdi)> UretAsync(SdsDbContext db, Sinav sinav)
     {
@@ -41,7 +45,7 @@ public static class ResmiFormUretici
 
         // ---------------------------------------------------------------- Analiz
         var ws = wb.AddWorksheet("Analiz");
-        UstBilgi(ws, baslik, "1/3", 10);
+        UstBilgi(ws, baslik, "1/3", 10, dokumanNo: AnalizDokumanNo);
 
         var r = 8;
         Bolum(ws, r, 1, 4, "DERS BİLGİLERİ");
@@ -129,6 +133,26 @@ public static class ResmiFormUretici
         if (analiz.Ciktilar.Count == 0) ws.Range(ci, 2, ci++, 10).Merge().Value = "Öğrenme çıktısı ilişkilendirilmedi.";
         Cerceve(ws.Range(cr + 1, 1, ci - 1, 10));
 
+        // Soruların ders öğrenim çıktıları ile ilişkilendirilmesi (satır: soru, sütun: çıktı)
+        var mr = ci + 1;
+        if (analiz.Ciktilar.Count > 0)
+        {
+            var ciktiSayisi = Math.Min(analiz.Ciktilar.Count, 9);
+            Bolum(ws, mr, 1, 10, "SORULARIN DERS ÖĞRENİM ÇIKTILARI İLE İLİŞKİLENDİRİLMESİ");
+            Basliklar(ws, mr + 1, 1, ["SORU NO", .. analiz.Ciktilar.Take(ciktiSayisi).Select(c => $"ÖÇ{c.SiraNo}")]);
+            for (var i = 0; i < sorular.Count; i++)
+            {
+                var satir = mr + 2 + i;
+                ws.Cell(satir, 1).Value = sorular[i].SoruNo;
+                for (var j = 0; j < ciktiSayisi; j++)
+                    if (analiz.Ciktilar[j].Sorular.Contains(sorular[i].SoruNo)) ws.Cell(satir, 2 + j).Value = "X";
+            }
+            var mSon = mr + 1 + sorular.Count;
+            Cerceve(ws.Range(mr + 1, 1, mSon, 1 + ciktiSayisi));
+            ws.Range(mr + 2, 1, mSon, 1 + ciktiSayisi).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center).Font.SetFontSize(9);
+            ci = mSon + 1;
+        }
+
         // Sınavın değerlendirmesi
         var dr = ci + 1;
         Bolum(ws, dr, 1, 10, "SINAVIN DEĞERLENDİRMESİ");
@@ -140,7 +164,8 @@ public static class ResmiFormUretici
 
         var ir = dr + 12;
         ws.Range(ir, 6, ir, 10).Merge().Value = "Dersin Öğretim Elemanı";
-        ws.Range(ir + 1, 6, ir + 1, 10).Merge().Value = string.Join(", ", ders.Egitmenler.Select(e => e.Kullanici.TamAd));
+        ws.Range(ir + 1, 6, ir + 1, 10).Merge().Value = string.Join(", ", ders.Egitmenler.Select(e => e.Kullanici.TamAd.ToUpper(Tr)));
+        ws.Range(ir + 2, 6, ir + 2, 10).Merge().Value = DateTime.Now.ToString("d.MM.yyyy", Tr);
         ws.Range(ir + 3, 6, ir + 3, 10).Merge().Value = "İmza: ..............................";
         ws.Range(ir, 6, ir + 3, 10).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center).Font.SetBold();
 
@@ -151,7 +176,7 @@ public static class ResmiFormUretici
         // ---------------------------------------------------------------- Liste
         var wl = wb.AddWorksheet("Liste");
         var sonSutun = 4 + sorular.Count;
-        UstBilgi(wl, baslik, "2/3", sonSutun);
+        UstBilgi(wl, baslik, "2/3", sonSutun, dokumanNo: AnalizDokumanNo);
         wl.Range(8, 1, 8, 4).Merge().Value = "SORULARA GÖRE ORT. PUANLAR";
         wl.Range(8, 1, 8, 4).Style.Font.SetBold().Fill.SetBackgroundColor(BaslikZemin).Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
         for (var i = 0; i < sorular.Count; i++)
@@ -191,36 +216,44 @@ public static class ResmiFormUretici
 
         // ---------------------------------------------------------------- İÖK Kağıt
         var wi = wb.AddWorksheet("İÖK Kağıt");
-        UstBilgi(wi, baslik, "3/3", sonSutun);
-        wi.Range(8, 1, 8, sonSutun).Merge().Value =
-            "İYİ - ORTA - KÖTÜ ÖRNEK KAĞITLAR: Aşağıdaki öğrencilerin sınav kağıtları ders dosyasında örnek olarak arşivlenmelidir.";
-        wi.Range(8, 1, 8, sonSutun).Style.Font.SetItalic().Alignment.SetWrapText();
-        wi.Row(8).Height = 28;
-        var sirali = girenler.OrderByDescending(Not).ThenBy(s => s.Ogrenci.OgrenciNo).ToList();
-        var medyan = analiz.Ozet.Medyan ?? 0;
-        var iyi = sirali.Take(3).ToList();
-        var kotu = sirali.TakeLast(3).Except(iyi).ToList();
-        var orta = sirali.Except(iyi).Except(kotu).OrderBy(s => Math.Abs(Not(s) - medyan)).Take(3).OrderByDescending(Not).ToList();
-        var ir2 = 10;
-        foreach (var (grup, liste) in new[] { ("İYİ", iyi), ("ORTA", orta), ("KÖTÜ", kotu) })
+        UstBilgi(wi, baslik, "1/1", sonSutun, "İYİ/ORTA/KÖTÜ SINAV KAĞIDI BİLGİLERİ", KagitDokumanNo, "06.02.2025", "01");
+        int Tam(SinavSonucu s) => (int)Math.Round(Not(s), MidpointRounding.AwayFromZero);
+        var ir2 = 8;
+        if (girenler.Count > 0)
         {
-            wi.Range(ir2, 1, ir2, sonSutun).Merge().Value = $"{grup} ÖRNEK KAĞITLAR";
-            wi.Range(ir2, 1, ir2, sonSutun).Style.Font.SetBold().Font.SetFontColor(XLColor.White).Fill.SetBackgroundColor(Lacivert);
-            Basliklar(wi, ir2 + 1, 1, ["S.N", "ÖĞR. NO", "ÖĞRENCİ ADI SOYADI", "PUAN", .. sorular.Select(q => $"S{q.SoruNo}")]);
-            var k = ir2 + 2;
-            var n = 1;
-            foreach (var s in liste)
+            var enYuksek = girenler.Max(Tam);
+            var enDusuk = girenler.Min(Tam);
+            // Ortanca kağıt: puanı medyana en yakın olan puan değeri
+            var medyan = analiz.Ozet.Medyan ?? 0;
+            var orta = girenler.Select(Tam).Distinct().OrderBy(p => Math.Abs(p - medyan)).ThenByDescending(p => p).First();
+            foreach (var (baslikMetni, puan) in new[]
             {
-                wi.Cell(k, 1).Value = n++;
-                wi.Cell(k, 2).Value = s.Ogrenci.OgrenciNo;
-                wi.Cell(k, 3).Value = s.Ogrenci.AdSoyad;
-                wi.Cell(k, 4).Value = Not(s);
-                foreach (var c in s.SoruCevaplari) wi.Cell(k, 4 + c.SoruNo).Value = c.Puan;
-                k++;
+                ($"DERSTE EN YÜKSEK PUAN ALAN ÖĞRENCİLER ({enYuksek} Puan)", enYuksek),
+                ($"DERSTE ORTA DÜZEY (MEDYANA EN YAKIN) PUAN ALAN ÖĞRENCİLER ({orta} Puan)", orta),
+                ($"DERSTE EN DÜŞÜK PUAN ALAN ÖĞRENCİLER ({enDusuk} Puan)", enDusuk),
+            })
+            {
+                var rg = wi.Range(ir2, 1, ir2, sonSutun).Merge();
+                rg.Value = baslikMetni;
+                rg.Style.Font.SetBold().Font.SetFontSize(11).Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                Basliklar(wi, ir2 + 1, 1, ["SN", "ÖĞR. NO", "ÖĞRENCİ ADI SOYADI", "PUAN", .. sorular.Select(q => q.SoruNo.ToString())]);
+                var k = ir2 + 2;
+                var n = 1;
+                foreach (var s in girenler.Where(g => Tam(g) == puan).OrderBy(g => g.Ogrenci.OgrenciNo))
+                {
+                    wi.Cell(k, 1).Value = n++;
+                    wi.Cell(k, 2).Value = s.Ogrenci.OgrenciNo;
+                    wi.Cell(k, 3).Value = s.Ogrenci.AdSoyad;
+                    wi.Cell(k, 4).Value = Not(s);
+                    foreach (var c in s.SoruCevaplari) wi.Cell(k, 4 + c.SoruNo).Value = c.Puan;
+                    k++;
+                }
+                Cerceve(wi.Range(ir2 + 1, 1, k - 1, sonSutun));
+                wi.Range(ir2 + 2, 4, Math.Max(k - 1, ir2 + 2), sonSutun).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                ir2 = k + 1;
             }
-            Cerceve(wi.Range(ir2 + 1, 1, Math.Max(k - 1, ir2 + 1), sonSutun));
-            wi.Range(ir2 + 2, 4, Math.Max(k - 1, ir2 + 2), sonSutun).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
-            ir2 = k + 1;
+            wi.Cell(ir2, 1).Value = "Bu öğrencilerin sınav kağıtları ders dosyasında iyi / orta / kötü örnek olarak arşivlenmelidir.";
+            wi.Cell(ir2, 1).Style.Font.SetItalic().Font.SetFontSize(9);
         }
         wi.Column(1).Width = 5; wi.Column(2).Width = 12; wi.Column(3).Width = 28; wi.Column(4).Width = 9;
         for (var i = 0; i < sorular.Count; i++) wi.Column(5 + i).Width = 5.5;
@@ -270,7 +303,8 @@ public static class ResmiFormUretici
         return sb.ToString();
     }
 
-    internal static void UstBilgi(IXLWorksheet ws, string dersBasligi, string sayfaNo, int sonSutun, string formAdi = "SINAV BAŞARISI ANALİZ VE DEĞERLENDİRME FORMU")
+    internal static void UstBilgi(IXLWorksheet ws, string dersBasligi, string sayfaNo, int sonSutun, string formAdi = "SINAV BAŞARISI ANALİZ VE DEĞERLENDİRME FORMU",
+        string dokumanNo = "", string revizyonTarihi = "", string revizyonNo = "")
     {
         using (var logo = Assembly.GetExecutingAssembly().GetManifestResourceStream("selcuk-logo.png"))
             if (logo is not null) ws.AddPicture(logo).MoveTo(ws.Cell(1, 1), 4, 2).WithSize(78, 78);
@@ -285,14 +319,15 @@ public static class ResmiFormUretici
         }
         ws.Range(5, 2, 5, orta).Style.Font.SetFontColor(Lacivert).Font.SetFontSize(11);
 
-        // Doküman künyesi: bölüm kalite birimi tarafından doldurulur
-        string[] kunye = ["Doküman No", "Yayın Tarihi", "Revizyon No", "Sayfa No"];
+        // Doküman künyesi (bölümün kalite dokümanı numaraları)
+        string[] kunye = ["Doküman No", "Revizyon Tarihi", "Revizyon No", "Sayfa No"];
+        string[] degerler = [dokumanNo, revizyonTarihi, revizyonNo, sayfaNo];
         for (var i = 0; i < kunye.Length; i++)
         {
             ws.Cell(1 + i, orta + 1).Value = kunye[i];
             ws.Cell(1 + i, orta + 1).Style.Font.SetFontSize(8);
             var deger = ws.Range(1 + i, orta + 2, 1 + i, sonSutun).Merge();
-            deger.Value = i == 3 ? sayfaNo : "";
+            deger.Value = degerler[i];
             deger.Style.Font.SetFontSize(8);
         }
         Cerceve(ws.Range(1, orta + 1, 4, sonSutun));
