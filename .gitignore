@@ -1,0 +1,28 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Editör / işletim sistemi
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Ortam / gizli bilgiler
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+
+# Claude Code yerel ayarları
+.claude/settings.local.json

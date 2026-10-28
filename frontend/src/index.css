@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-selcuk-zemin font-sans text-selcuk-metin antialiased;
+  }
+}
+
+@layer components {
+  .kart {
+    @apply rounded-xl border border-slate-200 bg-white shadow-kart;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-birincil {
+    @apply btn bg-selcuk-altin text-selcuk-lacivert hover:bg-selcuk-altin-koyu;
+  }
+  .btn-ikincil {
+    @apply btn border border-slate-300 bg-white text-selcuk-metin hover:bg-slate-50;
+  }
+  .btn-mavi {
+    @apply btn bg-selcuk-mavi text-white hover:bg-selcuk-lacivert;
+  }
+}
