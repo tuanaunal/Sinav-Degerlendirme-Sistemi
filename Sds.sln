@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sds.Api", "backend\Sds.Api\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sds.Tests", "backend\Sds.Tests\Sds.Tests.csproj", "{18D6C5B2-9533-4706-8279-056D7AA4AC17}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "araclar", "araclar", "{9AC11CC6-EA3E-40F4-AFDC-860881761126}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sds.OrnekVeri", "araclar\Sds.OrnekVeri\Sds.OrnekVeri.csproj", "{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +30,14 @@ Global
 		{18D6C5B2-9533-4706-8279-056D7AA4AC17}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18D6C5B2-9533-4706-8279-056D7AA4AC17}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18D6C5B2-9533-4706-8279-056D7AA4AC17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{90F75F2E-6369-46B8-ADA9-A8D7AEC7992B} = {CC733725-F946-4A06-A134-4D7719BCED58}
 		{18D6C5B2-9533-4706-8279-056D7AA4AC17} = {CC733725-F946-4A06-A134-4D7719BCED58}
+		{7E48E25A-1FC5-46BD-8FBD-0AC468581E8B} = {9AC11CC6-EA3E-40F4-AFDC-860881761126}
 	EndGlobalSection
 EndGlobal
