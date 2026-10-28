@@ -31,6 +31,13 @@ ornek-veriler/       Gerçekçi örnek optik ve sınıf listesi dosyaları (Aşa
 
 Gerekenler: .NET 8 SDK, Node.js 20+, PostgreSQL 16.
 
+JWT imza anahtarı ve veritabanı şifresi repoda tutulmaz; .NET User Secrets ile bilgisayarda saklanır.
+Yeni bir bilgisayarda ilk çalıştırmadan önce bir kez:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/gizli-ayarlari-kur.ps1 -VeritabaniSifresi <postgres-sifresi>
+```
+
 ```bash
 # Veritabanı (bilgisayar yeniden başladıysa)
 powershell -ExecutionPolicy Bypass -File scripts/veritabani-baslat.ps1
@@ -43,6 +50,16 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Demo hesaplar
+
+Şifreler sistemin kuralıyla üretilir: e-postanın @ öncesi + personel no + `*`.
+
+| Rol | E-posta | Şifre |
+|---|---|---|
+| Admin | `admin@selcuk.edu.tr` | `admin10001*` |
+| Admin + Öğretim Üyesi | `elif.yildirim@selcuk.edu.tr` | `elif.yildirim20417*` |
+| Öğretim Üyesi | `mehmet.kaya@selcuk.edu.tr` | `mehmet.kaya20533*` |
 
 ## Geliştirme aşamaları
 
