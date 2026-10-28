@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,9 @@ builder.Services.AddAuthorization(o =>
     o.DefaultPolicy = o.GetPolicy(Yetki.Aktif)!;
 });
 
-builder.Services.AddControllers();
+// Enum'lar JSON'da isimleriyle ("Guz", "Vize") gönderilip alınır
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
