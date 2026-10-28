@@ -10,7 +10,7 @@ Her aşama bir öncekinin üzerine eklenir. Aşama tamamlanınca commit atılır
 | 3 | Yönetim paneli (şifre sıfırlama, kullanıcı işlemleri, notlandırma yönetmeliği, optik form ayarları) | ✅ |
 | 4 | Ders panosu ve ders detayı | ✅ |
 | 5 | Gerçekçi örnek veri dosyaları (120 öğrenci) — [ayrıntılar](../ornek-veriler/README.md) | ✅ |
-| 6 | Dosya okuma motoru (optik `.txt`, OBİS `.xlsx`) | ⏳ |
+| 6 | Dosya okuma motoru (optik `.txt`, OBİS `.xlsx`) | ✅ |
 | 7 | Çoktan seçmeli sihirbaz: dosya yükleme, cevap anahtarı | ⏳ |
 | 8 | Çoktan seçmeli sihirbaz: veri eşleştirme, not düzenleme | ⏳ |
 | 9 | Çoktan seçmeli sihirbaz: kitapçık soru eşleştirme, öğrenme çıktıları | ⏳ |
