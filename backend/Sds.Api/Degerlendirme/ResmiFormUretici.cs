@@ -15,10 +15,10 @@ namespace Sds.Api.Degerlendirme;
 /// </summary>
 public static class ResmiFormUretici
 {
-    private static readonly CultureInfo Tr = new("tr-TR");
-    private static readonly XLColor Lacivert = XLColor.FromHtml("#0D2D5E");
-    private static readonly XLColor BaslikZemin = XLColor.FromHtml("#D9E1F2");
-    private static readonly XLColor AltinZemin = XLColor.FromHtml("#FFF2CC");
+    internal static readonly CultureInfo Tr = new("tr-TR");
+    internal static readonly XLColor Lacivert = XLColor.FromHtml("#0D2D5E");
+    internal static readonly XLColor BaslikZemin = XLColor.FromHtml("#D9E1F2");
+    internal static readonly XLColor AltinZemin = XLColor.FromHtml("#FFF2CC");
 
     public static async Task<(byte[] Icerik, string DosyaAdi)> UretAsync(SdsDbContext db, Sinav sinav)
     {
@@ -270,13 +270,13 @@ public static class ResmiFormUretici
         return sb.ToString();
     }
 
-    private static void UstBilgi(IXLWorksheet ws, string dersBasligi, string sayfaNo, int sonSutun)
+    internal static void UstBilgi(IXLWorksheet ws, string dersBasligi, string sayfaNo, int sonSutun, string formAdi = "SINAV BAŞARISI ANALİZ VE DEĞERLENDİRME FORMU")
     {
         using (var logo = Assembly.GetExecutingAssembly().GetManifestResourceStream("selcuk-logo.png"))
             if (logo is not null) ws.AddPicture(logo).MoveTo(ws.Cell(1, 1), 4, 2).WithSize(78, 78);
 
         var orta = Math.Max(3, sonSutun - 3);
-        string[] satirlar = ["T.C.", "SELÇUK ÜNİVERSİTESİ", "BİLGİSAYAR MÜHENDİSLİĞİ BÖLÜMÜ", dersBasligi, "SINAV BAŞARISI ANALİZ VE DEĞERLENDİRME FORMU"];
+        string[] satirlar = ["T.C.", "SELÇUK ÜNİVERSİTESİ", "BİLGİSAYAR MÜHENDİSLİĞİ BÖLÜMÜ", dersBasligi, formAdi];
         for (var i = 0; i < satirlar.Length; i++)
         {
             var rg = ws.Range(1 + i, 2, 1 + i, orta).Merge();
@@ -299,14 +299,14 @@ public static class ResmiFormUretici
         for (var i = 1; i <= 5; i++) ws.Row(i).Height = 16;
     }
 
-    private static void Bolum(IXLWorksheet ws, int satir, int bas, int son, string ad)
+    internal static void Bolum(IXLWorksheet ws, int satir, int bas, int son, string ad)
     {
         var rg = ws.Range(satir, bas, satir, son).Merge();
         rg.Value = ad;
         rg.Style.Font.SetBold().Font.SetFontColor(XLColor.White).Fill.SetBackgroundColor(Lacivert).Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
     }
 
-    private static void Satir(IXLWorksheet ws, int satir, int etiketSutun, string etiket, int degerBas, int degerSon, string deger)
+    internal static void Satir(IXLWorksheet ws, int satir, int etiketSutun, string etiket, int degerBas, int degerSon, string deger)
     {
         ws.Cell(satir, etiketSutun).Value = $"{etiket}:";
         ws.Cell(satir, etiketSutun).Style.Font.SetBold();
@@ -316,17 +316,17 @@ public static class ResmiFormUretici
         Cerceve(ws.Range(satir, etiketSutun, satir, degerSon));
     }
 
-    private static void Basliklar(IXLWorksheet ws, int satir, int bas, IReadOnlyList<string> basliklar)
+    internal static void Basliklar(IXLWorksheet ws, int satir, int bas, IReadOnlyList<string> basliklar)
     {
         for (var i = 0; i < basliklar.Count; i++) ws.Cell(satir, bas + i).Value = basliklar[i];
         ws.Range(satir, bas, satir, bas + basliklar.Count - 1).Style.Font.SetBold().Fill.SetBackgroundColor(BaslikZemin)
             .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
     }
 
-    private static void Cerceve(IXLRange rg) =>
+    internal static void Cerceve(IXLRange rg) =>
         rg.Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin).Border.SetInsideBorder(XLBorderStyleValues.Thin);
 
-    private static void Sayfa(IXLWorksheet ws, XLPageOrientation yon)
+    internal static void Sayfa(IXLWorksheet ws, XLPageOrientation yon)
     {
         ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
         ws.PageSetup.PageOrientation = yon;
@@ -334,7 +334,7 @@ public static class ResmiFormUretici
         ws.PageSetup.Margins.SetLeft(0.4).SetRight(0.4).SetTop(0.5).SetBottom(0.5);
     }
 
-    private static string Sayi(decimal? d) => d is null ? "-" : d.Value.ToString("0.##", Tr);
+    internal static string Sayi(decimal? d) => d is null ? "-" : d.Value.ToString("0.##", Tr);
 
-    private static string Ascii(string s) => s.Replace('ü', 'u').Replace('Ü', 'U').Replace('ı', 'i').Replace('İ', 'I');
+    internal static string Ascii(string s) => s.Replace('ü', 'u').Replace('Ü', 'U').Replace('ı', 'i').Replace('İ', 'I');
 }

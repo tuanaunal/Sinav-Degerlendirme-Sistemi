@@ -17,7 +17,7 @@ Her aşama bir öncekinin üzerine eklenir. Aşama tamamlanınca commit atılır
 | 10 | Açık uçlu sınav akışı, Excel'e aktar, sınavı sil, düzenleme modu | ✅ |
 | 11 | Sınav Başarı Analiz Raporu | ✅ |
 | 12 | Resmi Excel formu (Analiz, Liste, İÖK Kağıt) | ✅ |
-| 13 | Dönem değerlendirme ve harf notları | ⏳ |
+| 13 | Dönem değerlendirme ve harf notları | ✅ |
 | 14 | Dağıtım: Docker, Nginx, GitHub Actions | ⏳ |
 | — | *Final teslimi:* AI destekli analiz ve değerlendirme | 🔜 |
 
