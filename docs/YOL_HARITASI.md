@@ -7,7 +7,7 @@ Her aşama bir öncekinin üzerine eklenir. Aşama tamamlanınca commit atılır
 | 0 | Proje iskeleti ve Selçuk kurumsal teması | ✅ |
 | 1 | Veritabanı tasarımı (EF Core, PostgreSQL, başlangıç verisi) — [şema](VERITABANI.md) | ✅ |
 | 2 | Giriş ve kimlik doğrulama (JWT, roller, ilk girişte şifre değişikliği) | ✅ |
-| 3 | Yönetim paneli (şifre sıfırlama, kullanıcı işlemleri, notlandırma yönetmeliği, optik form ayarları) | ⏳ |
+| 3 | Yönetim paneli (şifre sıfırlama, kullanıcı işlemleri, notlandırma yönetmeliği, optik form ayarları) | ✅ |
 | 4 | Ders panosu ve ders detayı | ⏳ |
 | 5 | Gerçekçi örnek veri dosyaları (120 öğrenci) | ⏳ |
 | 6 | Dosya okuma motoru (optik `.txt`, OBİS `.xlsx`) | ⏳ |

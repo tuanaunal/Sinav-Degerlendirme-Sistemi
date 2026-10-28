@@ -5,7 +5,11 @@ import Giris from './pages/auth/Giris'
 import SifremiUnuttum from './pages/auth/SifremiUnuttum'
 import SifreDegistir from './pages/auth/SifreDegistir'
 import DersPanosu from './pages/ogretim-uyesi/DersPanosu'
-import YonetimPaneli from './pages/yonetim/YonetimPaneli'
+import YonetimDuzeni from './pages/yonetim/YonetimDuzeni'
+import SifreSifirlama from './pages/yonetim/SifreSifirlama'
+import KullaniciIslemleri from './pages/yonetim/KullaniciIslemleri'
+import NotlandirmaYonetmeligi from './pages/yonetim/NotlandirmaYonetmeligi'
+import OptikFormAyarlari from './pages/yonetim/OptikFormAyarlari'
 import Karsilama from './pages/Karsilama'
 
 /** Kök adres: giriş yapılmışsa rolüne göre ana sayfaya, yapılmamışsa giriş ekranına. */
@@ -28,7 +32,13 @@ export default function App() {
         <Route path="/panom" element={<DersPanosu />} />
       </Route>
       <Route element={<KorumaliRota yonetici />}>
-        <Route path="/yonetim" element={<YonetimPaneli />} />
+        <Route path="/yonetim" element={<YonetimDuzeni />}>
+          <Route index element={<Navigate to="sifre-sifirlama" replace />} />
+          <Route path="sifre-sifirlama" element={<SifreSifirlama />} />
+          <Route path="kullanicilar" element={<KullaniciIslemleri />} />
+          <Route path="notlandirma" element={<NotlandirmaYonetmeligi />} />
+          <Route path="optik-form" element={<OptikFormAyarlari />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
