@@ -37,10 +37,11 @@ export default function SinavGirisi() {
   const format = sinav.data?.format ?? (arama.get('format') === 'acik-uclu' ? 'AcikUclu' : 'CoktanSecmeli')
   const tamamlanan = sinav.data?.tamamlananAdim ?? 0
 
-  // İlk açılışta kalınan yerden devam et
+  // İlk açılışta kalınan yerden devam et; tamamlanmış sınav düzenlenirken not düzenleme adımı açılır
+  const tamamlandi = sinav.data?.durum === 'Tamamlandi'
   useEffect(() => {
-    if (adim === null && sinav.isFetched) setAdim(Math.min(tamamlanan + 1, 5))
-  }, [adim, sinav.isFetched, tamamlanan])
+    if (adim === null && sinav.isFetched) setAdim(tamamlandi ? 4 : Math.min(tamamlanan + 1, 5))
+  }, [adim, sinav.isFetched, tamamlanan, tamamlandi])
 
   const breadcrumb = [
     { etiket: 'Sınav Değerlendirme Sistemi', yol: '/panom' },

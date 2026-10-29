@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, FileSpreadsheet, FileText, Info, Loader2, Plus, Upload, X } from 'lucide-react'
 import { Uyari } from '../../../components/form'
 import { api, hataMesaji } from '../../../lib/api'
 import { sinavAnahtari, type OptikOnizleme, type SinavBilgisi, type SinifListesiOnizleme } from '../../../lib/sinav'
-import type { SinavFormati, SinavTuru } from '../../../lib/dersler'
+import { dersSorgulari, type SinavFormati, type SinavTuru } from '../../../lib/dersler'
 
 const EN_FAZLA_LISTE = 2
 
@@ -40,6 +40,7 @@ export default function Adim1DosyaYukleme({
 }) {
   const acikUclu = format === 'AcikUclu'
   const queryClient = useQueryClient()
+  const ders = useQuery(dersSorgulari.detay(dersId))
   const [optik, setOptik] = useState<SeciliOptik | null>(null)
   const [listeler, setListeler] = useState<SeciliListe[]>([])
   // Daha önce yüklenmiş dosyalar (sayfaya geri dönüldüğünde)
@@ -81,6 +82,7 @@ export default function Adim1DosyaYukleme({
   const yeniUyarilar = (s: SinavBilgisi) => s.uyarilar.filter((u) => !gosterilenUyarilar.has(u))
 
   const yukle = useMutation({
+    meta: { bildirim: 'Dosyalar yüklendi' },
     mutationFn: async () => {
       const form = new FormData()
       form.append('format', format)
@@ -196,6 +198,11 @@ export default function Adim1DosyaYukleme({
           </div>
 
           {listeler.filter((l) => l.hata).map((l) => <Uyari key={l.dosya.name} tur="hata">{l.dosya.name}: {l.hata}</Uyari>)}
+          {listeler.filter((l) => ders.data && l.onizleme?.dersKodu && l.onizleme.dersKodu !== ders.data.kod).map((l) => (
+            <Uyari key={`ders-${l.dosya.name}`} tur="uyari">
+              {l.dosya.name} {l.onizleme!.dersKodu} kodlu derse ait görünüyor; bu ders {ders.data!.kod}. Doğru sınıf listesini yüklediğinizden emin olun.
+            </Uyari>
+          ))}
           {listeler.flatMap((l) => l.onizleme?.uyarilar ?? []).map((u) => <Uyari key={u} tur="uyari">{u}</Uyari>)}
           {listeler.length > 1 && toplamOgrenci > 0 && (
             <p className="text-sm text-selcuk-metin-soluk">İki şubenin listesi birleştirilecek: toplam {toplamOgrenci} öğrenci.</p>

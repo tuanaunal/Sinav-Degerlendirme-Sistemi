@@ -66,6 +66,7 @@ export default function Adim2CevapAnahtari({ sinav, geri, ileri }: { sinav: Sina
     })
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Cevap anahtarı kaydedildi' },
     mutationFn: async () =>
       (await api.put<SinavBilgisi>(`/sinavlar/${sinav.id}/cevap-anahtari`, {
         soruSayisi,

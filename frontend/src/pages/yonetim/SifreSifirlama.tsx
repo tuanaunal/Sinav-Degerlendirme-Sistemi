@@ -35,6 +35,7 @@ export default function SifreSifirlama() {
   })
 
   const islem = useMutation({
+    meta: { bildirim: 'Talep güncellendi' },
     mutationFn: async ({ id, tur }: { id: number; tur: 'onayla' | 'reddet' }) =>
       (await api.post<{ mesaj: string }>(`/yonetim/sifre-talepleri/${id}/${tur}`)).data,
     onSuccess: (r) => {

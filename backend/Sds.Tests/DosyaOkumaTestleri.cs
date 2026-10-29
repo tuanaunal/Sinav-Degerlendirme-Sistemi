@@ -130,6 +130,7 @@ public class DosyaOkumaTestleri(TestUygulamasi uygulama) : IClassFixture<TestUyg
         Assert.Empty(s.Uyarilar);
         Assert.Equal(("213301026", "ESRA TURAN"), (s.Ogrenciler[0].OgrenciNo, s.Ogrenciler[0].AdSoyad));
         Assert.Contains(s.Ogrenciler, o => o.OgrenciNo == "233301032" && o.AdSoyad == "AYŞE NAZ YALÇIN");
+        Assert.Equal("3304701", s.DersKodu); // üst bilgideki "Ders: 3304701 - ..." satırı
 
         using var b = File.OpenRead(Path.Combine(OrnekKlasor, "OBIS_Sinif_Listesi_3304701_2026-2027_Guz_Butunleme.xlsx"));
         Assert.Equal(61, ExcelOkuyucu.SinifListesiOku(b).Ogrenciler.Count);
@@ -153,6 +154,7 @@ public class DosyaOkumaTestleri(TestUygulamasi uygulama) : IClassFixture<TestUyg
         var s = ExcelOkuyucu.SinifListesiOku(ms);
 
         Assert.Equal([("233301001", "ALİ VELİ"), ("233301002", "İPEK IŞIK")], s.Ogrenciler.Select(o => (o.OgrenciNo, o.AdSoyad)));
+        Assert.Null(s.DersKodu);
         Assert.Contains(s.Uyarilar, u => u.Contains("birden fazla"));
     }
 

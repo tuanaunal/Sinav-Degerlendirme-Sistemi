@@ -151,6 +151,7 @@ function KullaniciListesi() {
                       {k.dersler.map((d) => (
                         <li key={d.id}>
                           <span className="font-mono text-xs text-selcuk-metin-soluk">{d.kod}</span> {d.ad}
+                          <span className="ml-1 text-[11px] text-selcuk-metin-soluk">({d.akademikYil})</span>
                         </li>
                       ))}
                     </ul>
@@ -217,6 +218,7 @@ function KullaniciFormu({
     setForm((f) => ({ ...f, [alan]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }))
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Kullanıcı kaydedildi' },
     mutationFn: async () =>
       kayit
         ? (await api.put<KullaniciSatiri>(`/yonetim/kullanicilar/${kayit.id}`, form)).data
@@ -387,6 +389,7 @@ function EgitmenSecimi({ ders, kapat, tamamlandi }: { ders: DersSatiri; kapat: (
   const ogretimUyeleri = (kullanicilar.data ?? []).filter((k) => k.rol === 'OgretimUyesi' && k.aktif)
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Eğitmenler güncellendi' },
     mutationFn: async () => api.put(`/yonetim/dersler/${ders.id}/egitmenler`, { kullaniciIdleri: secili }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['yonetim'] })

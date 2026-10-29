@@ -193,7 +193,7 @@ export default function Adim4NotDuzenleme({ sinav, geri, ileri }: { sinav: Sinav
 
       <h3 className="mt-6 font-semibold">Özet İstatistikler</h3>
       <div className="mt-2 grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-3 lg:grid-cols-6">
-        <Ist etiket="Toplam / Giren" deger={`${n.ozet.giren} / ${n.ozet.toplam}`} />
+        <Ist etiket="Toplam / Giren" deger={`${n.ozet.toplam} / ${n.ozet.giren}`} />
         <Ist etiket="Ortalama Puan" deger={n.ozet.ortalama} />
         <Ist etiket="Medyan" deger={n.ozet.medyan} />
         <Ist etiket="Std. Sapma" deger={n.ozet.standartSapma} />
@@ -246,6 +246,7 @@ function ManuelPuan({ sinav, satir, maks, kapat, tamam }: {
 }) {
   const [puan, setPuan] = useState(String(satir.manuelPuan ?? satir.hamPuan))
   const kaydet = useMutation({
+    meta: { bildirim: 'Puan güncellendi' },
     mutationFn: async (deger: number | null) =>
       (await api.put<NotListesi>(`/sinavlar/${sinav.id}/notlar/${satir.sonucId}/manuel`, { puan: deger })).data,
     onSuccess: (d) => { tamam(d); kapat() },
@@ -279,6 +280,7 @@ function BonusPenceresi({ sinav, secili, kapat, tamam }: {
   const [puan, setPuan] = useState('5')
   const [aciklama, setAciklama] = useState('')
   const kaydet = useMutation({
+    meta: { bildirim: 'Bonus eklendi' },
     mutationFn: async () =>
       (await api.post<NotListesi>(`/sinavlar/${sinav.id}/notlar/bonus`, { sonucIdleri: secili, puan: Number(puan), aciklama })).data,
     onSuccess: (d) => { tamam(d, secili.length); kapat() },
@@ -305,6 +307,7 @@ function ProjePenceresi({ sinav, kapat, tamam }: { sinav: SinavBilgisi; kapat: (
   const [dosya, setDosya] = useState<File | null>(null)
   const input = useRef<HTMLInputElement>(null)
   const yukle = useMutation({
+    meta: { bildirim: 'Proje notları başarıyla yüklendi' },
     mutationFn: async () => {
       const form = new FormData()
       form.append('dosya', dosya!)
@@ -369,6 +372,7 @@ function SinavSilOnayi({ sinav, kapat }: { sinav: SinavBilgisi; kapat: () => voi
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const sil = useMutation({
+    meta: { bildirim: 'Sınav silindi' },
     mutationFn: async () => api.delete(`/sinavlar/${sinav.id}`),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: sinavAnahtari(sinav.dersId, sinav.tur) })

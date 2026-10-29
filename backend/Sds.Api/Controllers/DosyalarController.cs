@@ -11,7 +11,7 @@ public record OptikOnizleme(
     string DosyaAdi, string Kodlama, int OgrenciSayisi, int CevapAnahtariSayisi, int TahminiSoruSayisi,
     Dictionary<string, int> KitapcikDagilimi, List<OptikSatir> Satirlar, List<string> Uyarilar);
 
-public record SinifListesiOnizleme(string DosyaAdi, int OgrenciSayisi, List<SinifListesiOgrencisi> Ogrenciler, List<string> Uyarilar);
+public record SinifListesiOnizleme(string DosyaAdi, int OgrenciSayisi, List<SinifListesiOgrencisi> Ogrenciler, List<string> Uyarilar, string? DersKodu = null);
 
 public record NotTablosuOnizleme(string DosyaAdi, List<string> Sutunlar, int SatirSayisi, List<NotSatiri> Satirlar, List<string> Uyarilar);
 
@@ -59,7 +59,7 @@ public class DosyalarController(SdsDbContext db) : ControllerBase
         {
             using var akis = dosya.OpenReadStream();
             var s = ExcelOkuyucu.SinifListesiOku(akis);
-            return new SinifListesiOnizleme(dosya.FileName, s.Ogrenciler.Count, s.Ogrenciler, s.Uyarilar);
+            return new SinifListesiOnizleme(dosya.FileName, s.Ogrenciler.Count, s.Ogrenciler, s.Uyarilar, s.DersKodu);
         }
         catch (DosyaOkumaHatasi e)
         {

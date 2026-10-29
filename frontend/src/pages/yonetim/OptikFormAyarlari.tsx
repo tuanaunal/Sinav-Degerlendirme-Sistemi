@@ -41,6 +41,7 @@ export default function OptikFormAyarlari() {
   }, [veri.data])
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Optik form ayarları kaydedildi' },
     mutationFn: async () => (await api.put<{ mesaj: string }>('/ayarlar/optik-form', alanlar)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ayarlar', 'optik-form'] }),
   })

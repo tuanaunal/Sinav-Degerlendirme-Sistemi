@@ -70,6 +70,7 @@ export default function Adim3VeriEslestirme({ sinav, geri, ileri }: { sinav: Sin
   const yap = (yol: string, govde?: object) => islem.mutate(() => api.post<EslestirmeDurumu>(`/sinavlar/${sinav.id}/eslestirme/${yol}`, govde))
 
   const tamamla = useMutation({
+    meta: { bildirim: 'Eşleştirme kaydedildi' },
     mutationFn: async () => api.post(`/sinavlar/${sinav.id}/eslestirme/tamamla`),
     onSuccess: () => {
       queryClient.setQueryData(sinavAnahtari(sinav.dersId, sinav.tur), { ...sinav, tamamlananAdim: Math.max(sinav.tamamlananAdim, 3) })

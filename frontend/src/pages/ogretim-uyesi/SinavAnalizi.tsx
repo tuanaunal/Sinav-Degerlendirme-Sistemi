@@ -265,6 +265,7 @@ function DegerlendirmeBolumu({ sinavId }: { sinavId: number }) {
   const [taslak, setTaslak] = useState<string | null>(null)
   const metin = taslak ?? veri.data?.kayitli ?? ''
   const kaydet = useMutation({
+    meta: { bildirim: 'Değerlendirme kaydedildi' },
     mutationFn: () => api.put(`/sinavlar/${sinavId}/degerlendirme`, { metin }),
     onSuccess: () => { setTaslak(null); return istemci.invalidateQueries({ queryKey: anahtar }) },
   })

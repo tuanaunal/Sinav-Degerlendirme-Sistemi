@@ -152,6 +152,7 @@ function DersKartiBileseni({ ders }: { ders: DersKarti }) {
 function DersSilmeOnayi({ ders, kapat }: { ders: DersKarti; kapat: () => void }) {
   const istemci = useQueryClient()
   const sil = useMutation({
+    meta: { bildirim: 'Ders silindi' },
     mutationFn: () => api.delete(`/dersler/${ders.id}`),
     onSuccess: async () => { await istemci.invalidateQueries({ queryKey: ['dersler'] }); kapat() },
   })
@@ -190,6 +191,7 @@ function YeniDersFormu({ varsayilanYil, kapat, eklendi }: { varsayilanYil: strin
   })()
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Ders eklendi' },
     mutationFn: async () => (await api.post<DersKarti>('/dersler', form)).data,
     onSuccess: (d) => {
       queryClient.invalidateQueries({ queryKey: ['dersler'] })

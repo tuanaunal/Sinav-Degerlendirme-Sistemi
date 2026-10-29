@@ -34,6 +34,8 @@ export interface SinifListesiOnizleme {
   dosyaAdi: string
   ogrenciSayisi: number
   uyarilar: string[]
+  /** OBİS listesinin üst bilgisindeki ders kodu (yoksa null) */
+  dersKodu?: string | null
 }
 
 export interface OptikSecenegi {

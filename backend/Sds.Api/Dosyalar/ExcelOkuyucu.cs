@@ -5,7 +5,8 @@ namespace Sds.Api.Dosyalar;
 
 public record SinifListesiOgrencisi(int SatirNo, string OgrenciNo, string AdSoyad);
 
-public record SinifListesiSonucu(List<SinifListesiOgrencisi> Ogrenciler, List<string> Uyarilar);
+/// <summary>DersKodu: OBİS listesinin üst bilgisindeki "Ders: 3304701 - ..." satırından (yoksa null).</summary>
+public record SinifListesiSonucu(List<SinifListesiOgrencisi> Ogrenciler, List<string> Uyarilar, string? DersKodu = null);
 
 public record NotSatiri(int SatirNo, string OgrenciNo, string AdSoyad, Dictionary<string, decimal?> Degerler);
 
@@ -71,7 +72,19 @@ public static class ExcelOkuyucu
         }
 
         if (ogrenciler.Count == 0) throw new DosyaOkumaHatasi("Sınıf listesinde öğrenci bulunamadı.");
-        return new SinifListesiSonucu(ogrenciler, uyarilar);
+        return new SinifListesiSonucu(ogrenciler, uyarilar, DersKoduBul(ws, satir));
+    }
+
+    /// <summary>Başlık satırının üstündeki "Ders | 3304701 - DERS ADI" bilgisinden ders kodu.</summary>
+    private static string? DersKoduBul(IXLWorksheet ws, int baslikSatiri)
+    {
+        for (var r = 1; r < baslikSatiri; r++)
+        {
+            if (Metin.Anahtar(HucreMetni(ws.Cell(r, 1))) != Metin.Anahtar("Ders")) continue;
+            var m = System.Text.RegularExpressions.Regex.Match(HucreMetni(ws.Cell(r, 2)), @"^\s*(\d{5,10})\s*-");
+            if (m.Success) return m.Groups[1].Value;
+        }
+        return null;
     }
 
     /// <summary>

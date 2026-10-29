@@ -67,6 +67,7 @@ function KitapcikSoruEslestirme({ sinav }: { sinav: SinavBilgisi }) {
   }, [veri.data, n])
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Kitapçık eşleştirmesi kaydedildi' },
     mutationFn: async () => {
       const kitapciklar = Object.entries(secim).map(([kitapcik, satir]) => {
         const anaSoruNolari = Array<number | null>(n).fill(null)
@@ -177,11 +178,13 @@ function OgrenmeCiktilari({ sinav, geri }: { sinav: SinavBilgisi; geri: () => vo
   }, [veri.data])
 
   const islem = useMutation({
+    meta: { bildirim: 'Öğrenme çıktıları güncellendi' },
     mutationFn: async (f: () => Promise<{ data: CiktiDurumu }>) => (await f()).data,
     onSuccess: (d) => queryClient.setQueryData(anahtar, d),
   })
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Sınav kaydedildi' },
     mutationFn: async (tamamla: boolean) =>
       (await api.put<CiktiDurumu>(`/sinavlar/${sinav.id}/ogrenme-ciktilari/eslestirme`, {
         tamamla,
@@ -248,7 +251,7 @@ function OgrenmeCiktilari({ sinav, geri }: { sinav: SinavBilgisi; geri: () => vo
       ) : (
         <div className={`kart p-5 sm:p-6 ${kilitli ? 'pointer-events-none opacity-50' : ''}`}>
           <h2 className="text-lg font-bold text-selcuk-lacivert">Öğrenme Çıktıları - Soru İlişkilendirmesi</h2>
-          <p className="mt-1 text-sm text-selcuk-metin-soluk">Her çıktının hangi sorularla ölçüldüğünü işaretleyin (A kitapçığı soru numaraları).</p>
+          <p className="mt-1 text-sm text-selcuk-metin-soluk">Her çıktının hangi sorularla ölçüldüğünü işaretleyin{sinav.format === 'CoktanSecmeli' && ' (A kitapçığı soru numaraları)'}.</p>
           <div className="mt-4 overflow-x-auto pb-2">
             <table className="text-sm">
               <thead>

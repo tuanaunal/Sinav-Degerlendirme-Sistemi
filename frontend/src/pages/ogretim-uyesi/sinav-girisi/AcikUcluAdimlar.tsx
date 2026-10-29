@@ -39,6 +39,7 @@ export function AcikAdim2SoruSayisi({ sinav, geri, ileri }: { sinav: SinavBilgis
   const toplam = Math.round(puanlar.reduce((a, b) => a + b, 0) * 100) / 100
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Soru ayarları kaydedildi' },
     mutationFn: async () =>
       (await api.put<SinavBilgisi>(`/sinavlar/${sinav.id}/acik-uclu/soru-ayarlari`, {
         soruSayisi: n, maksimumPuan: maks, puanlariDinamikDagit: dinamik,
@@ -128,6 +129,7 @@ export function AcikAdim3NotYukleme({ sinav, geri, ileri }: { sinav: SinavBilgis
   const input = useRef<HTMLInputElement>(null)
 
   const yukle = useMutation({
+    meta: { bildirim: 'Notlar yüklendi' },
     mutationFn: async () => {
       const form = new FormData()
       form.append('dosya', dosya!)

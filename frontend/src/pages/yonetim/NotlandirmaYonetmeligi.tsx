@@ -55,6 +55,7 @@ export default function NotlandirmaYonetmeligi() {
   }, [veri.data])
 
   const kaydet = useMutation({
+    meta: { bildirim: 'Notlandırma ayarları kaydedildi' },
     mutationFn: async () =>
       (await api.put<{ mesaj: string }>('/ayarlar/notlandirma', {
         vizeAgirligi: vize,
